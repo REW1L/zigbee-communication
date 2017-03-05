@@ -1,0 +1,46 @@
+{
+	"folders":
+	[
+		{
+			"path": "."
+		}
+	],
+    "tab_size": 2,
+    "SublimeLinter":
+    {
+        "linters":
+        {
+            "clang": {
+                "@disable": false,
+                "args": [],
+                "excludes": [],
+                "extra_flags": "-std=c++11",
+                "include_dirs": 
+                [
+                    "$project_base_path/zigbee/",
+                    "$project_base_path/third-party/lz4/",
+                    "$project_base_path/protocol/"
+                ]
+            }
+        }
+    },
+    "settings":
+    {
+        "PersistentRegexHighlight":
+        {
+            "enabled": false
+        },
+        "ClangAutoComplete":
+        {
+            "debug" : true,
+            "include_dirs" : 
+            [
+                "$project_base_path/protocol/",
+                "$project_base_path/zigbee/",
+                "$project_base_path/third-party/lz4/",
+                "$project_base_path/sampleapp/"
+            ],
+            "autocomplete_all" : "true"
+        }
+    }
+}
