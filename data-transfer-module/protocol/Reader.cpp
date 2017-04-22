@@ -1,4 +1,5 @@
 #include "Reader.hpp"
+#include "ProtocolLogger.hpp"
 
 #include <cstring>
 
@@ -34,9 +35,12 @@ Reader::Reader(int fd, long long timeout)
 #else
 Reader::Reader(int nodeID, long long timeout)
 {
+  LOG_INFO("READER", "Configuring node %d", nodeID);
   this->path = NULL;
   this->timeout = std::chrono::nanoseconds(timeout);
   this->fd = configure_device(nodeID);
+  LOG_INFO("READER", "Configured %s", 
+           (fd != 0)? "Master" : "Slave");
   this->stopped = 0;
 }
 #endif
@@ -50,7 +54,7 @@ int Reader::run()
 {
   if(this->fd < 0)
   {
-    printf("Impossible to connect with device\n");
+    LOG_ERROR("READER", "Impossible to connect with device fd: %d", fd);
     return 1;
   }
   this->reader = std::thread(&Reader::reader_function, this);
@@ -154,12 +158,14 @@ void Reader::reader_function()
     {
       trigger = 1;
       read_forward = 0;
-      printf("Received bytes: %d\n", bytes_received);
+      LOG_INFO("READER", "Bytes received: %d", bytes_received);
 
       pd = parse_received_data(buffer, bytes_received);
 
       if(pd.pevent.ev != NO_EVENT)
+      {
         WorkerThread::add_event(pd.pevent);
+      }
       // else
       //   read_forward = 1;
 

@@ -19,6 +19,8 @@ int join_network(int fd);
 
 int exit_network(int fd);
 
+int send(int, char*, size_t);
+
 int create_network(int fd);
 
 #if defined (__cplusplus)

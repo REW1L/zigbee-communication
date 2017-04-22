@@ -5,6 +5,7 @@
 #include <termios.h> /* POSIX terminal control definitions */
 #include "zigbee_definitions.h"
 #include <stdint.h>
+#include <stdio.h>
 
 // TODO: make logs
 
@@ -95,7 +96,7 @@ int configure_device(const char* device)
   if (fd == -1)
     return fd;
 
-  set_interface_attribs (fd, B19200, 0);
+  set_interface_attribs (fd, B9600, 0);
   set_blocking (fd, 0);
 
   return fd;
@@ -106,11 +107,21 @@ int send_frame(int fd, char *array, size_t size)
   char text[74];
   if(size > 74)
     size = 74;
-  memcpy(text, "AT+BCASTB:4A,00\r", 16);
-  write(fd, text, 16);
-  memset(text, 0, 74);
+  // memcpy(text, "AT+BCASTB:4A,00\r", 16);
+  // write(fd, text, 16);
+  memset(text, 0, size);
   memcpy(text, array, size);
-  return write(fd, text, 74);
+  return write(fd, text, size);
+}
+
+int send(int fd, char* array)
+{
+  size_t size;
+  for(size = 0; array[size] != 0; size++);
+  array[size] = '\r';
+  array[size+1] = '\n';
+  printf("SENT: %s", array);
+  return write(fd, array, size);
 }
 
 size_t read_from_device(int fd, char *buffer, size_t size)

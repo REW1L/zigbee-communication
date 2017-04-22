@@ -6,6 +6,7 @@
 #include "../protocol/Reader.hpp"
 #include "../protocol/Sender.hpp"
 #include "../protocol/WorkerThread.hpp"
+#include "../logging/ProtocolLogger.hpp"
 #include "MyUserListener.cpp"
 
 int main(int argc, char const *argv[])
@@ -36,6 +37,7 @@ int main(int argc, char const *argv[])
   Reader rt(inf.id, 500LL); // configuring node with id and reading timeout in nanoseconds
   Sender sr;
   WorkerThread wt;
+  ProtocolLogger pl;
 
 // run threads
   rt.run();

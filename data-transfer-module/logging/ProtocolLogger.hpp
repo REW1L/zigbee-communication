@@ -21,6 +21,7 @@ public:
   ProtocolLogger();
   virtual ~ProtocolLogger() {thread_run = false;};
   static void log(const char *prefix, const char *format, ...);
+  void stop() {thread_run = false; log_thread.join();};
 private:
   void flush();
   void out_thread();

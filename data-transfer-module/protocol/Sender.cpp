@@ -1,4 +1,5 @@
 #include "Sender.hpp"
+#include "ProtocolLogger.hpp"
 
 #if !defined(RF24)
   #include "../zigbee/serial_transactions.h"
@@ -31,10 +32,17 @@ int Sender::send(RouteConfig inf)
 {
   if (fd < 0)
   {
-    printf("Device was not configured.\n");
+    LOG_ERROR("SENDER", "Device was not configured. fd: %d", fd);
     return 1;
   }
+  LOG_INFO("SENDER", "Send RouteConfig id: %u coords_src: [%u, %u], "
+               "coords_dst: [%u, %u], speed: %u, time: %u", 
+               inf.id, inf.coords_src[0], inf.coords_src[1], inf.coords_dst[0],
+               inf.coords_dst[1], inf.speed, inf.time);
+  
   packets ep = pack_info(inf, 0);
+
+  LOG_INFO("SENDER", "Sending %d packets", ep.number);
 
   // TODO: make sending packets more stable
 

@@ -7,11 +7,12 @@ CPP = g++
 OBJS = $(PROTOCOL_ROOT_DIR)/objs
 BIN = $(PROTOCOL_ROOT_DIR)/bin
 LIBS_DIR = $(PROTOCOL_ROOT_DIR)/libs
+LOGGER_SRC = $(PROTOCOL_ROOT_DIR)/logging
 PROTOCOL_SRC = $(PROTOCOL_ROOT_DIR)/protocol
 
 
 CPP_FLAGS = -g -c -std=c++11
-C_FLAGS = -g -c
+C_FLAGS = -g -c -std=c11
 LOCAL_FLAGS =
 
 SOURCES_C = $(PROTOCOL_SRC)/parser.c \
@@ -21,16 +22,18 @@ SOURCES_CPP = $(PROTOCOL_SRC)/Reader.cpp \
 					$(PROTOCOL_SRC)/Sender.cpp \
 					$(PROTOCOL_SRC)/WorkerThread.cpp \
 					$(PROTOCOL_SRC)/ProtocolListener.cpp \
-					$(PROTOCOL_SRC)/UserListener.cpp
+					$(PROTOCOL_SRC)/UserListener.cpp \
+					$(LOGGER_SRC)/ProtocolLogger.cpp
 
 INCLUDES = -I./third-party/lz4 \
-					-I./protocol/
+					-I./protocol/ \
+					-I./logging/
 
 DEVICE = RF24
 
 ifeq ($(DEVICE), RF24)
 LOCAL_FLAGS += -DRF24
-DEV = -I./third-party/RF24Mesh $(PROTOCOL_ROOT_DIR)/RF24/device_actions.cpp -o $(OBJS)/device_actions.o
+DEV = -I./third-party/RF24Mesh -I./logging/ $(PROTOCOL_ROOT_DIR)/RF24/device_actions.cpp -o $(OBJS)/device_actions.o
 INCLUDES += -I./RF24/ \
 						-I./third-party/RF24/ \
 						-I./third-party/RF24Network/ \
@@ -88,7 +91,7 @@ device:
 
 sampleapp: $(BIN) pc device libs
 	$(CPP) $(CPP_FLAGS) $(LOCAL_FLAGS) -I./protocol/ $(PROTOCOL_ROOT_DIR)/sampleapp/sampleapp.cpp -o $(OBJS)/SA_sampleapp.o
-	$(CPP) -g -lrf24-bcm -lrf24network -lrf24mesh -pthread -Wall $(LOCAL_FLAGS) $(OBJS)/device_actions.o $(OBJS)/SA_*.o $(OBJECTS) $(OBJS)/lz4.o -o $(BIN)/sampleapp
+	$(CPP) -g -lrf24-bcm -lrf24network -std=c++11 -lrf24mesh -pthread -Wall $(LOCAL_FLAGS) $(OBJS)/device_actions.o $(OBJS)/SA_*.o $(OBJECTS) $(OBJS)/lz4.o -o $(BIN)/sampleapp
 	@echo "Got sampleapp"
 
 # all: sampleapp

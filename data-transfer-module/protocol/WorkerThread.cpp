@@ -1,4 +1,5 @@
 #include "WorkerThread.hpp"
+#include "ProtocolLogger.hpp"
 #include <thread>
 #include <chrono>
 
@@ -27,6 +28,7 @@ WorkerThread::WorkerThread()
 
 int WorkerThread::add_event(Event ev)
 {
+  LOG_INFO("WORKER", "New event [%d]", ev.ev);
   WorkerThread::events_mtx.lock();
   WorkerThread::events.push_back(ev);
   WorkerThread::events_mtx.unlock();
@@ -45,6 +47,8 @@ void WorkerThread::work()
       WorkerThread::events.pop_front();
       WorkerThread::events_mtx.unlock();
 
+      LOG_INFO("WORKER", "Notify event [%d]", ev.ev);
+
       for(Listener* lst : listeners)
       {
         lst->notify(ev);
@@ -56,10 +60,12 @@ void WorkerThread::work()
 
 void WorkerThread::add_listener(Listener* lst)
 {
+  LOG_INFO("WORKER", "Added listener [%p]", lst);
   this->listeners.push_back(lst);
 }
 
 void WorkerThread::stop()
 {
+  LOG_INFO("WORKER", "Stopped (%d)", 1);
   this->stopped = 1;
 }

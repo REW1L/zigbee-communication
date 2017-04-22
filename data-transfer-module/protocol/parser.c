@@ -121,13 +121,6 @@ ParsedData parse_received_data(const char* packet, int size)
     return ret;
   }
 
-  printf("parse_received_data: \n---------------------------\n");
-  for (j = 0; j < size; j++)
-  {
-    printf("%02hhX ", packet[j]);
-  }
-  printf("\n---------------------------\n");
-
   if (size > HEADER_SIZE)
   {
     ret.pevent.ev = NEW_PACKET;
@@ -179,12 +172,6 @@ RouteConfig parse_info(char* data, uint32_t size, uint32_t id)
   RouteConfig ret = { .id = id, .speed = 0, .time = 0, //.way = NULL, .way_length = 0, 
     .coords_src = {0,0}, .coords_dst = {0,0}};
   int i;
-  printf("parse_info: \n---------------------------\n");
-  for (i = 0; i < size; i++)
-  {
-    printf("%02hhX ", data[i]);
-  }
-  printf("\n---------------------------\n");
   for(i = 0; i < size;)
   {
     switch(data[i])
@@ -243,7 +230,6 @@ static uint32_t parse_speed(const char* raw_data, size_t size)
   }
   else
   {
-    // printf("SPEED NE POPAL\n");
     return -1;
   }
   return speed;

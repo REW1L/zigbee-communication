@@ -2,6 +2,7 @@
 #include <string>
 #include <cstdarg>
 #include <ctime>
+#include <cstring>
 #include <cstdio>
 #include <thread>
 #include <chrono>
@@ -14,6 +15,7 @@ void ProtocolLogger::log(const char *prefix, const char *format, ...)
 {
   va_list arguments;
   char buffer[MAX_LOG_SIZE];
+  memset(buffer, 0, MAX_LOG_SIZE);
   auto timestamp = std::time(NULL);
   va_start(arguments, format);
   int offset = std::strftime(buffer, MAX_LOG_SIZE, "[%H:%M:%S] ", 
@@ -31,8 +33,8 @@ void ProtocolLogger::out_thread()
 {
   while(thread_run)
   {
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     ProtocolLogger::flush();
-    std::this_thread::sleep_for(std::chrono::seconds(2));
   }
 }
 
@@ -63,7 +65,7 @@ ProtocolLogger::ProtocolLogger()
   char file_name[MAX_LOG_FILE_NAME_SIZE];
   auto timestamp = std::time(NULL);
   std::strftime(file_name, MAX_LOG_FILE_NAME_SIZE, 
-                "ProtocolLog_%d_%m_%Y_%H_%M_%S.log", 
+                "ProtocolLog_%Y_%m_%d_%H_%M_%S.log", 
                 std::localtime(&timestamp));
   log_file_name = std::string(file_name);
   this->log_thread = std::thread(&ProtocolLogger::out_thread, this);
