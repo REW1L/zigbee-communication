@@ -45,10 +45,11 @@ int Sender::send(RouteConfig inf)
   LOG_INFO("SENDER", "Sending %d packets", ep.number);
 
   // TODO: make sending packets more stable
-
+  int temp;
   for (int i = 0; i < ep.number; i++)
   {
-    send_frame(fd, ep.data[i], FRAME_SIZE);
+    temp = send_frame(fd, ep.data[i], FRAME_SIZE);
+    LOG_INFO("SENDER", "Sent bytes: %d", temp);
   }
   return 0;
 }

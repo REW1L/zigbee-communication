@@ -10,103 +10,6 @@ static uint32_t parse_time(const char* raw_data, size_t size);
 static uint32_t parse_speed(const char* raw_data, size_t size);
 // static int parse_way(const char* raw_data, size_t size, uint32_t **way, uint32_t *way_length);
 
-#ifdef ZIGBEE
-ParsedData parse_received_data(const char* packet, int size)
-{
-  int ps, j; // packet start
-
-  ParsedData ret = { .pevent = { .ev = NO_EVENT , .data = NULL }, .parsed = 0 };
-
-  zigbee_packet* zgbp;
-
-  if (packet == NULL)
-  {
-    // printf("Packet is NULL.\n");
-    return ret;
-  }
-  // printf("Packet is not NULL.\n");
-
-  for(ps = 0; ps < size && ( packet[ps] == '\r' || packet[ps] == '\n' || packet[ps] == '\0' ); ps++);
-
-  if(ps < size)
-  {
-    // printf("Start of the packet was found. First 6 chars: ");
-    // for(j = 0; j < 6; j++)
-    //   putchar(packet[ps+j]);
-    // printf("\n");
-    if (packet[ps] == '>')
-    {
-      return ret;
-    }
-    else if((ps+3 < size) && (strncmp(&(packet[ps]), "AT", 2) == 0))
-    {
-      // printf("This is AT command.\n");
-      for(j = ps; j < size && packet[j] != '\r'; j++); // AT command ends with \r\n
-
-      if (j != size)
-      {
-        ret.pevent.ev = COMMAND_SENT;
-        ret.pevent.data = calloc(0, j-ps);
-        memcpy(ret.pevent.data, &(packet[ps]), j-ps);
-        ret.parsed = j + 1;
-      }
-    }
-    else if((ps+2 < size) && (strncmp(&(packet[ps]), "OK", 2) == 0))
-    {
-      // printf("This is OK.\n");
-      ret.pevent.ev = COMMAND_RESPONSE;
-      ret.pevent.data = malloc(2);
-      strncpy(ret.pevent.data, "OK", 2);
-      ret.parsed = ps + 2;
-    }
-    else if((ps+19 < size) && (strncmp(&(packet[ps]), "BCAST:", 6) == 0))
-    {
-      // printf("This is message from another device.\n");
-      ret.pevent.ev = NEW_PACKET;
-      zgbp = malloc(sizeof(zigbee_packet));
-      memset(zgbp->eui, 0, 9);
-      memcpy(zgbp->eui, &(packet[ps+6]), 8);
-      ps += 15;
-      char temp[3];
-      temp[2] = '\0';
-      memcpy(temp, &(packet[ps]), 2);
-      zgbp->size = (int)strtol(temp, NULL, 16);
-      ret.parsed = ps + zgbp->size + 3;
-      zgbp->header_flags = packet[ps+3];
-      zgbp->number = (uint8_t)packet[ps+5];
-      ps += 6;
-      zgbp->id = 0;
-      for(j = 0; j < ID_SIZE; j++)
-      {
-        zgbp->id += ((packet[ps+j])&0xff) << (8*j);
-      }
-
-      ps += ID_SIZE;
-
-      zgbp->op = packet[ps];
-
-      memset(zgbp->packet_data, 0, FRAME_SIZE);
-
-      memcpy(zgbp->packet_data, &(packet[ps+2]), zgbp->size);
-
-      ret.pevent.data = zgbp;
-    }
-    else if((ps+8 > size) && (strncmp(&(packet[ps]), "ERROR:", 6) == 0))
-    {
-      // printf("This is error.\n");
-      ret.pevent.ev = COMMAND_RESPONSE;
-      ret.pevent.data = malloc(8);
-      strncpy(ret.pevent.data, &(packet[ps]), 8);
-      ret.parsed = ps + 8;
-    }
-  }
-  else
-  {
-    // printf("Packet start was not found.\n");
-  }
-  return ret;
-}
-#else
 ParsedData parse_received_data(const char* packet, int size)
 {
   int j; // packet start
@@ -163,8 +66,6 @@ ParsedData parse_received_data(const char* packet, int size)
   }
   return ret;
 }
-
-#endif
 
 RouteConfig parse_info(char* data, uint32_t size, uint32_t id)
 {

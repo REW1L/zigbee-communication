@@ -93,19 +93,19 @@ size_t read_from_device(int master, char *buffer, size_t size)
       bool add = true;
       network.read(header,&new_addr,sizeof(uint16_t));
       LOG_INFO("RF24", "Header type 'A', new address: %d", new_addr);
-      // if(master)
-      // {
-      //   for(uint16_t addr : addresses)
-      //   {
-      //     header = RF24NetworkHeader(mesh.getAddress(addr), 'A');
-      //     network.write(header, &new_addr, sizeof(new_addr));
-      //     // mesh.write(&new_addr, 'A', sizeof(new_addr), addr);
+      if(master)
+      {
+        for(uint16_t addr : addresses)
+        {
+          // header = RF24NetworkHeader(mesh.getAddress(addr), 'A');
+          // network.write(header, &new_addr, sizeof(new_addr));
+          mesh.write(&new_addr, 'A', sizeof(new_addr), addr);
 
-      //     header = RF24NetworkHeader(mesh.getAddress(new_addr), 'A');
-      //     network.write(header, &addr, sizeof(addr));
-      //     // mesh.write(&addr, 'A', sizeof(addr), new_addr);
-      //   }
-      // }
+          // header = RF24NetworkHeader(mesh.getAddress(new_addr), 'A');
+          // network.write(header, &addr, sizeof(addr));
+          mesh.write(&addr, 'A', sizeof(addr), new_addr);
+        }
+      }
 
       for(uint16_t addr : addresses)
       {
@@ -127,16 +127,7 @@ size_t read_from_device(int master, char *buffer, size_t size)
     }
     else if(header.type == 'F')
     {
-      if(master)
-      {
-        int received_bytes = network.read(header, buffer, size);
-        send_frame(master, buffer, received_bytes);
-        return received_bytes;
-      }
-      else
-      {
-        return network.read(header, buffer, size);
-      }
+      return network.read(header, buffer, size);
     }
     else
     {

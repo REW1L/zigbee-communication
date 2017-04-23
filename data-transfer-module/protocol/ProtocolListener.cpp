@@ -65,6 +65,7 @@ int ProtocolListener::new_packet(zigbee_packet* zgbp)
           char *raw_data = new char[i*FRAME_SIZE];
 
           // TODO: make compression
+          zigbee_packet to_parse = *(lst->front());
           i = 0;
           for(zigbee_packet *zg : *lst)
           {
@@ -74,7 +75,7 @@ int ProtocolListener::new_packet(zigbee_packet* zgbp)
             delete zg;
           }
 
-          this->parse_op(lst->front(), raw_data, i*FRAME_SIZE);
+          this->parse_op(to_parse, raw_data, i*FRAME_SIZE);
         }
         else
         {
@@ -93,15 +94,15 @@ int ProtocolListener::new_packet(zigbee_packet* zgbp)
   return 0;
 }
 
-int ProtocolListener::parse_op(zigbee_packet* zgbp, char* data, size_t size)
+int ProtocolListener::parse_op(zigbee_packet zgbp, char* data, size_t size)
 {
-  switch(zgbp->op)
+  switch(zgbp.op)
   {
     case INFO:
     {
-      LOG_INFO("PC_LISTENER", "Received full packet for RouteConfig, size: %d", size);
+      LOG_INFO("PC_LISTENER", "Received full packet for RouteConfig, size: %d, id: ", size, zgbp.id);
       RouteConfig *inf = new RouteConfig;
-      *inf = parse_info(data, size, zgbp->id);
+      *inf = parse_info(data, size, zgbp.id);
       LOG_INFO("PC_LISTENER", "Parsed RouteConfig id: %u coords_src: [%u, %u], "
          "coords_dst: [%u, %u], speed: %u, time: %u", 
          inf->id, inf->coords_src[0], inf->coords_src[1], inf->coords_dst[0],

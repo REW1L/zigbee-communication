@@ -14,7 +14,7 @@
 
 #include "WorkerThread.hpp"
 
-#include <stdio.h>
+// #include <stdio.h>
 
 #if !defined(RF24)
 Reader::Reader(const char *path, long long timeout)
@@ -120,64 +120,28 @@ int Reader::stop()
 void Reader::reader_function()
 {
   char* buffer = new char[1000];
-  int bytes_received = 0, offset = 0, old_end = 0;
-  char read_forward = 1, trigger = 1;
   ParsedData pd;
+  int bytes_received, offset = 0;
   while(!stopped)
   {
-    // if(read_forward)
-    // {
-    //   bytes_received = 0;
-    //   if(trigger)
-    //   {
-    //     trigger = 0;
-    //   }
-      
-    //   bytes_received = read_from_device(this->fd, &(buffer[old_end]), 500);
-
-    //   if(bytes_received)
-    //   {
-    //     old_end += bytes_received;
-    //     if(old_end > 500)
-    //     {
-    //       memcpy(buffer, &(buffer[offset]), old_end-offset);
-    //       old_end = bytes_received;
-    //       offset = 0;
-    //     }
-    //   }
-    // }
-    // else
-    // {
-    //   if(trigger)
-    //   {
-    //     trigger = 0;
-    //   }
-    // }
-    bytes_received = read_from_device(this->fd, buffer, 500);
-    if(bytes_received)
+    bytes_received = read_from_device(this->fd, buffer+offset, 100);
+    if(bytes_received+offset >= FRAME_SIZE)
     {
-      trigger = 1;
-      read_forward = 0;
-      LOG_INFO("READER", "Bytes received: %d", bytes_received);
+      LOG_INFO("READER", "Full frame received: %d bytes received", bytes_received);
 
-      pd = parse_received_data(buffer, bytes_received);
+      pd = parse_received_data(buffer, FRAME_SIZE);
 
       if(pd.pevent.ev != NO_EVENT)
       {
         WorkerThread::add_event(pd.pevent);
       }
-      // else
-      //   read_forward = 1;
-
-      // if(pd.parsed < (1000-offset))
-      // {
-      //   offset += pd.parsed;
-      // }
-      // else
-      // {
-      //   old_end = 0;
-      //   offset = 0;
-      // }
+      memcpy(buffer, buffer+FRAME_SIZE, bytes_received+offset-FRAME_SIZE);
+      offset = bytes_received+offset-FRAME_SIZE;
+    }
+    else if(bytes_received)
+    {
+      LOG_INFO("READER", "Forward reading, received: %d bytes", bytes_received);
+      offset+=bytes_received;
     }
     std::this_thread::sleep_for(this->timeout);
   }

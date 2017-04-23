@@ -104,12 +104,13 @@ int configure_device(const char* device)
 
 int send_frame(int fd, char *array, size_t size)
 {
-  char text[74];
+  char text[76];
   if(size > 74)
     size = 74;
   // memcpy(text, "AT+BCASTB:4A,00\r", 16);
   // write(fd, text, 16);
-  memset(text, 0, size);
+  // memset(text, 0, FRAME_SIZE+2);
+  // strncpy(text, "XB", 2);
   memcpy(text, array, size);
   return write(fd, text, size);
 }
