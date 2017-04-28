@@ -96,7 +96,7 @@ int configure_device(const char* device)
   if (fd == -1)
     return fd;
 
-  set_interface_attribs (fd, B9600, 0);
+  set_interface_attribs (fd, B115200, 0);
   set_blocking (fd, 0);
 
   return fd;
@@ -115,13 +115,8 @@ int send_frame(int fd, char *array, size_t size)
   return write(fd, text, size);
 }
 
-int send(int fd, char* array)
+int send(int fd, char* array, size_t size)
 {
-  size_t size;
-  for(size = 0; array[size] != 0; size++);
-  array[size] = '\r';
-  array[size+1] = '\n';
-  printf("SENT: %s", array);
   return write(fd, array, size);
 }
 
