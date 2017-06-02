@@ -3,6 +3,12 @@
 
 #include <thread>
 #include <chrono>
+#if !defined(RF24)
+  #include "../zigbee/device.hpp"
+#else
+  #include "../RF24/device.hpp"
+#endif
+#include <cstdint>
 
 class Reader
 {
@@ -24,8 +30,9 @@ public:
   int restart(long long timeout);
   int stop();
   int getId() { return fd; }
-
+  Device *device;
 private: 
+  int find_subarray(const char*, int, const char*, int);
   void reader_function();
   std::chrono::nanoseconds timeout;
   const char *path;

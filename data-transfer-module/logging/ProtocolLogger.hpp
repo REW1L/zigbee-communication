@@ -9,6 +9,7 @@
 
 #define MAX_LOG_FILE_NAME_SIZE 50
 #define MAX_LOG_SIZE 4096
+#define LOGGING_SLEEP 10
 
 #define LOG_INFO(prefix, format, ...) ProtocolLogger::log("[I] [" prefix "]", format, __VA_ARGS__)
 #define LOG_DEBUG(prefix, format, ...) ProtocolLogger::log("[D] [" prefix "]", format, __VA_ARGS__)

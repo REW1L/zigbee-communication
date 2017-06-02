@@ -1,4 +1,4 @@
-#include "device_actions.hpp"
+#include "device.hpp"
 #include <stdio.h>
 #include "RF24Mesh/RF24Mesh.h" 
 #include <RF24/RF24.h>

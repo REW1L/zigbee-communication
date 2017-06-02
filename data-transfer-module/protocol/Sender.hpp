@@ -3,6 +3,11 @@
 
 #include <cstddef>
 #include "protocol_encode.h"
+#if !defined(RF24)
+  #include "../zigbee/device.hpp"
+#else
+  #include "../RF24/device.hpp"
+#endif
 
 class Sender
 {
@@ -12,17 +17,15 @@ public:
   Sender() {}
   Sender(const char *path);
   Sender(int fd);
+  Sender(Device*);
   int configure(const char *path);
   #else
   Sender() { this->fd = 1; }
   #endif
   int send(RouteConfig inf);
-  int net_info();
-  int join_net();
-  int exit_net();
-  int create_net();
   int getId() { return fd; }
-private:
+// private:
+  Device *device;
   const char *path;
   int fd;
 };

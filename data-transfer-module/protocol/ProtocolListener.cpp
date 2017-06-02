@@ -14,6 +14,11 @@ void ProtocolListener::notify(Event ev)
       this->new_packet((zigbee_packet*)(ev.data));
       break;
     }
+    case NEW_FRAME:
+    {
+      this->new_frame((proto_frame*)ev.data);
+      break;
+    }
     default: return;
   }
 }
@@ -36,8 +41,9 @@ int ProtocolListener::new_packet(zigbee_packet* zgbp)
   }
   for(std::list<zigbee_packet*> *lst : packets_lists)
   {
-    if(strncmp(lst->front()->eui, zgbp->eui, 8) == 0)
+    if(lst->front()->from == zgbp->from)
     {
+      LOG_INFO("PC_LISTENER", "GET PACKET FROM: 0x%llX", zgbp->from);
       if(lst->front() != zgbp)
         lst->push_back(zgbp);
       long sum = 0, i = 0; // first message has zero in number
@@ -117,6 +123,52 @@ int ProtocolListener::parse_op(zigbee_packet zgbp, char* data, size_t size)
   return 0;
 }
 
+int ProtocolListener::new_frame(proto_frame* data)
+{
+  uint64_t addresses[2];
+  proto_frame* pf = (proto_frame*)data;
+  zigbee_packet* zgbp;
+  int offset;
 
+  if (data == NULL)
+  {
+    // printf("Packet is NULL.\n");
+    return -1;
+  }
+
+  LOG_INFO("PC_LISTENER", "Got proto frame with size %d", pf->size);
+
+  if (pf->size > HEADER_SIZE)
+  {
+    zgbp = (zigbee_packet*)malloc(sizeof(zigbee_packet));
+    zgbp->from = *(uint64_t*)(pf->data);
+    offset = sizeof(uint64_t);
+    zgbp->to = *(uint64_t*)(pf->data+offset);
+    offset += sizeof(uint64_t);
+    zgbp->header_flags = *(uint16_t*)(pf->data+offset);
+    offset += sizeof(uint16_t);
+    zgbp->number = *(uint8_t*)(pf->data+offset);
+    offset += sizeof(uint8_t);
+    zgbp->id = *(uint32_t*)(pf->data+offset);
+    offset += sizeof(uint32_t);
+    zgbp->op = *(uint8_t*)(pf->data+offset);
+    offset += sizeof(uint8_t);
+
+    if (zgbp->op == 0)
+    {
+      free(zgbp);
+      return -1;
+    }
+
+    zgbp->size = pf->size-offset;
+
+    memset(zgbp->packet_data, 0, FRAME_SIZE);
+    memcpy(zgbp->packet_data, (void*)(pf->data+offset), FRAME_SIZE);
+    Event ev = { .ev = NEW_PACKET, .data = zgbp };
+    free(pf);
+    WorkerThread::add_event(ev);
+  }
+  return 0;
+}
 
 

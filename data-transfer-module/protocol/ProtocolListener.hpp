@@ -17,6 +17,7 @@ public:
 private:
   int parse_op(zigbee_packet, char*, size_t);
   int new_packet(zigbee_packet* zgbp);
+  int new_frame(proto_frame* zgbp);
   std::list<std::list<zigbee_packet*>*> packets_lists; // TODO: tree
 };
 

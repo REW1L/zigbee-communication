@@ -15,7 +15,7 @@ LIBS = $(LIBS_DIR)/librf24.so.1.2.0 \
 
 # TODO: move shell script to makefile
 
-$(OBJS)/PC_RF24.o: $(PROTOCOL_ROOT_DIR)/RF24/device_actions.cpp $(PROTOCOL_ROOT_DIR)/RF24/device_actions.hpp
+$(OBJS)/PC_RF24.o: $(PROTOCOL_ROOT_DIR)/RF24/device_actions.cpp $(PROTOCOL_ROOT_DIR)/RF24/device.hpp
 	@$(CPP) -c -std=gnu++11 $(PR_DEV_INCLUDES) $(PROTOCOL_ROOT_DIR)/RF24/device_actions.cpp -o $(OBJS)/PC_RF24.o
 	@echo "Compiled [PC_RF24] successfully!"
 

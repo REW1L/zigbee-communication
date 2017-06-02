@@ -240,170 +240,10 @@ int check_speed()
   return 0;
 }
 
-int check_way_encoding(uint32_t input)
-{
-  char buffer[2400];
-  int size = 280, i, j, k, offset;
-  uint32_t way_array[70][2];
-
-  way way;
-  way.length = size;
-  way.way = (uint32_t*)way_array;
-  for(i = 0; i < size; i++)
-  {
-    way_array[i][0] = input;
-    way_array[i][1] = ~input;
-  }
-
-  raw_field rf = pack_way(buffer, &way, true, WAY);
-
-  if(buffer[0] != (char)WAY)
-  {
-    printf("Error with field number e: %X a: %02hhX\n", 
-      WAY, buffer[0]);
-    return 1;
-  }
-  if(buffer[1] != (char)((way.length)&0xff) 
-     || buffer[2] != (char)((((uint16_t)(way.length))/0x100)&0xff))
-  {
-    printf("Error with size e: %02hhX %02hhX a: %02hhX %02hhX\n", 
-      (way.length)&0xff, ((way.length) >> 8)&0xff, buffer[1], buffer[2]);
-    return 1;
-  }
-
-  for(i = 0; i < way.length; i++)
-  {
-    offset = FIELD_ID_SIZE+SIZE_SIZE + i*COORD_SIZE*2;
-    for (j = 0; j < 2; j++)
-    {
-      if( buffer[offset+j*COORD_SIZE] != (char)((way_array[i][j])&0xff)
-         || buffer[offset+j*COORD_SIZE+1] != (char)(((way_array[i][j]) / 0x100)&0xff)
-         || buffer[offset+j*COORD_SIZE+2] != (char)(((way_array[i][j]) / 0x10000)&0xff)
-         || buffer[offset+j*COORD_SIZE+3] != (char)(((way_array[i][j]) / 0x1000000)&0xff))
-      {
-        printf("Error with %d set and %d coord "
-          "e: %X a: %02hhX %02hhX %02hhX %02hhX\n", 
-          i, j, way_array[i][j], buffer[offset], buffer[offset+1], 
-          buffer[offset+2], buffer[offset+3]);
-        return 1;
-      }
-    }
-  }
-
-  if(rf.size != (SIZE_SIZE + FIELD_ID_SIZE + (size*2*COORD_SIZE)))
-  {
-    printf("Error with ret size e: %d a: %d\n", 
-      SIZE_SIZE + FIELD_ID_SIZE + (size) ,rf.size);
-    return 1;
-  }
-  return 0;
-}
-
-int check_way()
-{
-  printf("Checking way encoding\n");
-  int32_t from = 1, to = 0x10000000;
-  bool passed = true;
-  if(check_way_encoding(0))
-  {
-    passed = false;
-    printf("FAILED\n");
-    return 1;
-  }
-  for (uint32_t i = from; i < to; i *= 0x11)
-  {
-    if(check_way_encoding(i))
-    {
-      passed = false;
-      printf("FAILED\n");
-      return 1;
-    }
-  }
-  printf("PASSED\n");
-  return 0;
-}
-
-// int check_pack_data()
-// {
-//   char buffer[100];
-//   uint16_t speed = 256;
-//   uint32_t coords[2] = {255, 257};
-//   printf("Checking packing data\n");
-
-//   pack_data(buffer, SPEED, &speed, true);
-//   if(buffer[0] != SPEED)
-//   {
-//     printf("Error in speed e: %d a: %d\n", SPEED, buffer[0]);
-//     printf("FAILED\n");
-//     return 1;
-//   }
-
-//   pack_data(buffer, COORDS_START, &coords, true);
-//   if(buffer[0] != COORDS_START)
-//   {
-//     printf("Error in starting coords e: %d a: %d\n", COORDS_START, buffer[0]);
-//     printf("FAILED\n");
-//     return 1;
-//   }
-
-//   pack_data(buffer, COORDS_END, &coords, true);
-//   if(buffer[0] != COORDS_END)
-//   {
-//     printf("Error in ending coords e: %d a: %d\n", COORDS_END, buffer[0]);
-//     printf("FAILED\n");
-//     return 1;
-//   }
-//   printf("PASSED\n");
-//   return 0;
-// }
-
 int check_parse_info()
 {
   printf("Checking parsing to info\n");
   info inf, inf_check;
-  uint32_t sampleway[10][2] = {{1,2},{123,123},{1,2},{123,123},{1,2},{123,123},{1,2},{123,123},{1,2},{123,123}};
-  // {
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff},
-  //   {0xaaaaaaaa,0xaaaaaaaa},{0xffffffff,0xffffffff}
-  // };
 
   size_t i, j;
   inf.id = 1;
@@ -413,26 +253,6 @@ int check_parse_info()
   inf.coords_dst[0] = 256;
   inf.coords_dst[1] = 256;
   inf.time = 1484316021;
-  inf.way = (uint32_t*)sampleway;
-  inf.way_length = 10;
-  // 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00,
-  uint8_t a[139] = { 0x04, 0x02, 0x00, 0x6d, 0x01, 0x01, 0x08, 0x00, 
-                     0x7b, 0x00, 0x00, 0x00, 0x7b, 0x00, 0x00, 0x00, 
-                     0x03, 0x08, 0x00, 0x75, 0xdd, 0x78, 0x58, 0x00, 
-                     0x00, 0x00, 0x00, 0x02, 0x08, 0x00, 0x00, 0x01, 
-                     0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x05, 0x0a, 
-                     0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 
-                     0x00, 0x7b, 0x00, 0x00, 0x00, 0x7b, 0x00, 0x00, 
-                     0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 
-                     0x00, 0x7b, 0x00, 0x00, 0x00, 0x7b, 0x00, 0x00, 
-                     0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 
-                     0x00, 0x7b, 0x00, 0x00, 0x00, 0x7b, 0x00, 0x00, 
-                     0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 
-                     0x00, 0x7b, 0x00, 0x00, 0x00, 0x7b, 0x00, 0x00, 
-                     0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 
-                     0x00, 0x7b, 0x00, 0x00, 0x00, 0x7b, 0x00, 0x00, 
-                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-                     0x00, 0x00 };
   inf_check = parse_info(a, 130, 1);
   if(inf.speed != inf_check.speed)
   {
@@ -458,37 +278,6 @@ int check_parse_info()
     return 1;
   }
 
-  if(inf.way_length != inf_check.way_length)
-  {
-    printf("Parse info failed:\nWay check failed:\nExpected: %d Actual: %d\n", inf.way_length, inf_check.way_length);
-    return 1;
-  }
-  else
-  {
-    if(inf_check.way == nullptr)
-    {
-      printf("Parse info failed:\nWay is nullptr.\n");
-      return 1;
-    }
-    for(i = 0; i < inf.way_length*2; i++)
-    {
-      if(inf.way[i] != inf_check.way[i])
-      {
-        printf("Parse info failed:\nWay is wrong:\nExpected: [");
-        for(j = 0; j < inf.way_length*2; j++)
-        {
-          printf(" %d", inf.way[j]);
-        }
-        printf(" ]\nActual: [");
-        for(j = 0; j < inf.way_length*2; j++)
-        {
-          printf(" %d", inf_check.way[j]);
-        }
-        printf(" ]\n");
-        return 1;
-      }
-    }
-  }
   printf("PASSED\n");
   return 0;
 }
@@ -506,9 +295,6 @@ int main(int argc, const char* argv[])
     return 1;
 
   if(check_speed() != 0)
-    return 1;
-
-  if(check_way() != 0)
     return 1;
 
   // check_pack_data();

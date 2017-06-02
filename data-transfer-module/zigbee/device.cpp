@@ -3,9 +3,13 @@
 #include <fcntl.h>   /* File control definitions */
 #include <errno.h>   /* Error number definitions */
 #include <termios.h> /* POSIX terminal control definitions */
-#include "zigbee_definitions.h"
 #include <stdint.h>
 #include <stdio.h>
+#include "device.hpp"
+#include "stdlib.h"
+
+#include "../protocol/protocol.h"
+#include "../logging/ProtocolLogger.hpp"
 
 // TODO: make logs
 
@@ -63,7 +67,7 @@ set_blocking (int fd, int should_block)
   }
 
   tty.c_cc[VMIN]  = should_block ? 1 : 0;
-  tty.c_cc[VTIME] = 5;            // 0.5 seconds read timeout
+  tty.c_cc[VTIME] = 0;            // 0.5 seconds read timeout
 
   // if (tcsetattr (fd, TCSANOW, &tty) != 0)
     // printf ("error %d setting term attributes", errno);
@@ -88,74 +92,49 @@ open_port(const char* device)
   return fd;
 }
 
-int configure_device(const char* device)
+int Device::configure_device(const char* device)
 {
-  int fd;
-  fd = open_port(device);
+  uint8_t buffer[100], offset;
+  this->fd = open_port(device);
   
-  if (fd == -1)
-    return fd;
+  if (this->fd == -1)
+    return -1;
 
-  set_interface_attribs (fd, B115200, 0);
-  set_blocking (fd, 0);
+  set_interface_attribs (this->fd, B115200, 0);
+  set_blocking (this->fd, 0);
 
-  return fd;
+  write(this->fd, "+++", 3); // go to AT mode
+  usleep(2000000); // Guard Times
+  read(this->fd, buffer, 10);
+  if(strncmp((char*)buffer, "OK", 2) != 0) // successfully went to AT mode
+  {
+    LOG_INFO("DEVICE", "Configuring buffer: %s", buffer);
+    return -1;
+  }
+  write(this->fd, "ATSH\r", 5); // getting top 8 bytes of MAC
+  usleep(100000); // it needs to get all response
+  read(this->fd, buffer, 9);
+  for(offset = 0; buffer[offset] != '\r' && buffer[offset] != '\n'; offset++);
+  write(this->fd, "ATSL\r", 5); // getting bottom 8 bytes of MAC
+  usleep(100000); // it needs to get all response
+  read(this->fd, buffer+offset, 9);
+  write(this->fd, "ATCN\r", 5);
+  sscanf((char*)(buffer), "%llX", &(this->mac)); // all info is got is in human readable style
+  LOG_INFO("DEVICE", "Configured with mac: 0x%llX, buffer: %s", this->mac, buffer);
+  return 0;
 }
 
-int send_frame(int fd, char *array, size_t size)
+int Device::send_frame(char *array, int size)
 {
-  char text[76];
-  if(size > 74)
-    size = 74;
-  // memcpy(text, "AT+BCASTB:4A,00\r", 16);
-  // write(fd, text, 16);
-  // memset(text, 0, FRAME_SIZE+2);
-  // strncpy(text, "XB", 2);
-  memcpy(text, array, size);
-  return write(fd, text, size);
+  return write(this->fd, array, size);
 }
 
-int send(int fd, char* array, size_t size)
+int Device::send(char* array, int size)
 {
-  return write(fd, array, size);
+  return write(this->fd, array, size);
 }
 
-size_t read_from_device(int fd, char *buffer, size_t size)
+int Device::read_from_device(char *buffer, int size)
 {
-  return read(fd, buffer, size);
-}
-
-int get_network_info(int fd)
-{
-  return write(fd, "AT+N\r", 5);
-}
-
-int join_network(int fd)
-{
-  return write(fd, "AT+JN\r", 6);
-}
-
-int exit_network(int fd)
-{
-  return write(fd, "AT+DASSL\r", 9);
-}
-
-int create_network(int fd)
-{
-  return write(fd, "AT+EN\r", 6);
-}
-
-enum device_type get_device_type(char* text)
-{
-  if(strncmp(text, "FFD", 3) == 0)
-    return FFD;
-  if(strncmp(text, "COO", 3) == 0)
-    return COO;
-  if(strncmp(text, "ZED", 3) == 0)
-    return ZED;
-  if(strncmp(text, "SED", 3) == 0)
-    return SED;
-  if(strncmp(text, "MED", 3) == 0)
-    return MED;
-  return NON_TYPE;
+  return read(this->fd, buffer, size);
 }

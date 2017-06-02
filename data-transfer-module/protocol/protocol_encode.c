@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <time.h>
 #include "lz4.h"
+#include "common_functions.h"
 
 static void*** func_array;
 
@@ -91,44 +92,7 @@ static raw_field pack_speed(char* dst,
 
   return ret;
 }
-/*
-static raw_field pack_way(char* dst, 
-                          way* way, 
-                          char to_dst, 
-                          uint8_t field_num)
-{
-  raw_field ret;
-  uint16_t i, size;
-  uint32_t k, coord, offset = 0;
-  uint32_t* loc_way;
-  loc_way = way->way;
-  ret.size = way->length*2*COORD_SIZE;
-  if (to_dst)
-    ret.data = dst;
-  else
-    ret.data = (char*)malloc(ret.size + FIELD_ID_SIZE + SIZE_SIZE);
 
-  *(ret.data) = field_num;
-  *(ret.data+1) = (way->length) & 0xff;
-  *(ret.data+2) = (way->length / 0x100) & 0xff;
-
-  ret.size += FIELD_ID_SIZE + SIZE_SIZE;
-  offset += FIELD_ID_SIZE + SIZE_SIZE;
-  size = way->length*2;
-
-  for (k = 0; k < size; k++)
-  {
-    coord = loc_way[k];
-    for (i = 0; i < COORD_SIZE; i++)
-    {
-      *(ret.data+offset) = (uint8_t)coord&0xff;
-      coord /= 0x100;
-      offset++;
-    }
-  }
-  return ret;
-}
-*/
 int8_t make_header(char* packet, 
                    uint16_t flags, 
                    uint32_t id, 
@@ -204,17 +168,8 @@ packets pack_info(RouteConfig inf, int16_t flags)
   int32_t size, field_offset = 0, raw_offset = 0, free_space;
   raw_field field;
   packets ret;
-  // way w;
 
-  // if(inf.way != NULL)
-  // {
-    // size = (SIZE_SIZE+FIELD_ID_SIZE)*4 + 
-      // SPEED_SIZE+TIME_SIZE+COORD_SIZE*4+((inf.way_length)*COORD_SIZE*2);
-  // }
-  // else
-  // {
-    size = (SIZE_SIZE+FIELD_ID_SIZE)*4 + SPEED_SIZE+TIME_SIZE+COORD_SIZE*4;
-  // }
+  size = (SIZE_SIZE+FIELD_ID_SIZE)*4 + SPEED_SIZE+TIME_SIZE+COORD_SIZE*4;
 
   packet = (char*)calloc(size, 1);
 
@@ -235,19 +190,6 @@ packets pack_info(RouteConfig inf, int16_t flags)
   field = pack_coords(&packet[offset], inf.coords_dst, 1, COORDS_END);
 
   offset += field.size;
-
-  // if(inf.way != NULL)
-  // {
-  //   w.way = inf.way;
-  //   w.length = inf.way_length;
-
-  //   field = pack_way(&packet[offset], &w, 1, WAY);
-  //   offset += field.size;
-  // }
-  // else
-  // {
-  //   // printf("Way is NULL\n");
-  // }
 
   ret = make_packets(packet, size, flags, inf.id, OP_INFO);
   free(packet);

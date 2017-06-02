@@ -16,10 +16,15 @@ void ProtocolLogger::log(const char *prefix, const char *format, ...)
   va_list arguments;
   char buffer[MAX_LOG_SIZE];
   memset(buffer, 0, MAX_LOG_SIZE);
-  auto timestamp = std::time(NULL);
+  auto timestamp = std::chrono::system_clock::now();
+  auto time_c = std::chrono::system_clock::to_time_t(timestamp);
+  auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(timestamp.time_since_epoch()) 
+    - std::chrono::duration_cast<std::chrono::seconds>(timestamp.time_since_epoch());
+  int offset = std::strftime(buffer, MAX_LOG_SIZE, "[%H:%M:%S", 
+                             std::localtime(&time_c));
+  offset += snprintf(buffer+offset, MAX_LOG_SIZE, ".%lld] ", millis.count());
+
   va_start(arguments, format);
-  int offset = std::strftime(buffer, MAX_LOG_SIZE, "[%H:%M:%S] ", 
-                             std::localtime(&timestamp));
   offset += std::snprintf(buffer+offset, MAX_LOG_SIZE-offset, "%s ", prefix);
   vsnprintf(buffer+offset, MAX_LOG_SIZE-offset, format, arguments);
   std::string str(buffer);
@@ -33,7 +38,7 @@ void ProtocolLogger::out_thread()
 {
   while(thread_run)
   {
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::this_thread::sleep_for(std::chrono::milliseconds(LOGGING_SLEEP));
     ProtocolLogger::flush();
   }
 }
@@ -50,13 +55,20 @@ void ProtocolLogger::flush()
   out_list.clear();
   log_mtx.unlock();
 
+#ifndef LOGGING_STDOUT
   FILE* descriptor = fopen(log_file_name.c_str(), "a");
   for(auto it = temp_str.begin(); it != temp_str.end(); it++)
   {
     fprintf(descriptor, "%s\n", (*it).c_str());
   }
-  temp_str.clear();
   fclose(descriptor);
+#else
+  for(auto it = temp_str.begin(); it != temp_str.end(); it++)
+  {
+    printf("%s\n", (*it).c_str());
+  }
+#endif
+  temp_str.clear();
 }
 
 ProtocolLogger::ProtocolLogger()

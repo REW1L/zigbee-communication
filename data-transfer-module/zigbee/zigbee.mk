@@ -2,14 +2,14 @@ LOCAL_FLAGS += -DZIGBEE
 PR_INCLUDES += -I./zigbee/
 LIBS=
 
-PR_ZIGBEE_SRC := $(PROTOCOL_ROOT_DIR)/zigbee/serial_transactions.c
-PR_ZIGBEE_INCLUDES := $(PROTOCOL_ROOT_DIR)/zigbee/serial_transactions.h \
+PR_ZIGBEE_SRC := $(PROTOCOL_ROOT_DIR)/zigbee/device.cpp
+PR_ZIGBEE_INCLUDES := $(PROTOCOL_ROOT_DIR)/zigbee/device.hpp \
                       $(PROTOCOL_ROOT_DIR)/zigbee/zigbee_definitions.h
                  
 
 
 $(OBJS)/PC_zigbee.o: $(PR_ZIGBEE_INCLUDES) $(PR_ZIGBEE_SRC)
-	@$(CC) $(PROTOCOL_ROOT_DIR)/zigbee/serial_transactions.c -std=gnu11 -c -o $(OBJS)/PC_zigbee.o
+	@$(CPP) $(PROTOCOL_ROOT_DIR)/zigbee/device.cpp -std=gnu++11 -c -o $(OBJS)/PC_zigbee.o
 	@echo "Compiled [PC_zigbee] successfully!"
 
 protocol_device: $(OBJS)/PC_zigbee.o
