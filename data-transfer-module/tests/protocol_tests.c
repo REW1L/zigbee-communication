@@ -9,7 +9,7 @@
 int check_coords_encoding(uint32_t* coords, uint8_t field_num)
 {
   char buffer[20];
-  raw_field rf = pack_coords(buffer, coords, true, field_num);
+  raw_field rf = pack_coords(buffer, coords, 1, field_num);
   if(buffer[0] != (char)field_num)
   {
     printf("Error with field number e: %02hhX a: %02hhX\n", 
@@ -121,11 +121,11 @@ int check_header()
   return 0;
 }
 
-int check_time_encoding(uint64_t time)
+int check_time_encoding(uint32_t time)
 {
   char buffer[20];
 
-  raw_field rf = pack_time(buffer, &time, true, TIME);
+  raw_field rf = pack_time(buffer, &time, 1, TIME);
   if(buffer[0] != (char)TIME)
   {
     printf("Error with field number e: %02hhX a: %02hhX\n", 
@@ -144,16 +144,11 @@ int check_time_encoding(uint64_t time)
   if(buffer[3] != (char)(time&0xff) 
      || buffer[4] != (char)((time/0x100)&0xff)
      || buffer[5] != (char)((time/0x10000)&0xff) 
-     || buffer[6] != (char)((time/0x1000000)&0xff)
-     || buffer[7] != (char)((time/0x100000000)&0xff) 
-     || buffer[8] != (char)((time/0x10000000000)&0xff)
-     || buffer[9] != (char)((time/0x1000000000000)&0xff) 
-     || buffer[10] != (char)((time/0x100000000000000)&0xff))
+     || buffer[6] != (char)((time/0x1000000)&0xff))
   {
     printf("Error with time e: %llX a: %02hhX %02hhX %02hhX "
-      "%02hhX %02hhX %02hhX %02hhX %02hhX\n", 
-      time, buffer[3], buffer[4], buffer[5], buffer[6], buffer[7], 
-      buffer[8], buffer[9], buffer[10]);
+      "%02hhX\n", 
+      time, buffer[3], buffer[4], buffer[5], buffer[6]);
     return 1;
   }
 
@@ -169,10 +164,8 @@ int check_time()
 {
   printf("Checking time encoding\n");
   int64_t from = 1, to = 0x1000000000000000;
-  bool passed = true;
   if(check_time_encoding(0))
   {
-    passed = false;
     printf("FAILED\n");
     return 1;
   }
@@ -180,7 +173,6 @@ int check_time()
   {
     if(check_time_encoding(i))
     {
-      passed = false;
       printf("FAILED\n");
       return 1;
     }
@@ -189,11 +181,11 @@ int check_time()
   return 0;
 }
 
-int check_speed_encoding(uint16_t speed)
+int check_speed_encoding(uint32_t speed)
 {
   char buffer[20];
 
-  raw_field rf = pack_speed(buffer, &speed, true, SPEED);
+  raw_field rf = pack_speed(buffer, &speed, 1, SPEED);
   if(buffer[0] != (char)SPEED)
   {
     printf("Error with field number e: %02hhX a: %02hhX\n", 
@@ -240,20 +232,16 @@ int check_speed()
   return 0;
 }
 
-int check_parse_info()
+int check_parse_info(RouteConfig inf)
 {
-  printf("Checking parsing to info\n");
-  info inf, inf_check;
+  RouteConfig inf_check;
+  uint8_t a[100];
+  
+  packets pckts = pack_info(inf, 0);
+  inf_check = parse_info(&(pckts.raw_data[HEADER_SIZE]), 68, inf.id);
 
-  size_t i, j;
-  inf.id = 1;
-  inf.speed = 365;
-  inf.coords_src[0] = 123;
-  inf.coords_src[1] = 123;
-  inf.coords_dst[0] = 256;
-  inf.coords_dst[1] = 256;
-  inf.time = 1484316021;
-  inf_check = parse_info(a, 130, 1);
+  free(pckts.raw_data);
+  free(pckts.data);
   if(inf.speed != inf_check.speed)
   {
     printf("Parse info failed:\nSpeed check failed:\nExpected: %d Actual: %d\n", inf.speed, inf_check.speed);
@@ -277,7 +265,83 @@ int check_parse_info()
     printf("Parse info failed:\nDist coords check failed:\nExpected: [%d, %d] Actual: [%d, %d]\n", inf.coords_dst[0], inf.coords_dst[1], inf_check.coords_dst[0], inf_check.coords_dst[1]);
     return 1;
   }
+  return 0;
+}
 
+int check_info()
+{
+  printf("Checking parsing to info\n");
+  RouteConfig inf;
+  for(uint32_t i = 0; i < 0x8FFFFF; i = (i << 1)+1)
+  {
+    inf.id = i;
+    inf.speed = i;
+    inf.coords_src[0] = i;
+    inf.coords_src[1] = i;
+    inf.coords_dst[0] = i;
+    inf.coords_dst[1] = i;
+    inf.time = i;
+    if(check_parse_info(inf))
+      return 1;
+  }
+  printf("PASSED\n");
+  return 0;
+}
+
+int check_parse_speed()
+{
+  uint8_t buffer[100];
+  printf("Checking parsing speed\n");
+  for(uint32_t i = 0; i < 0x8FFFFF; i = (i << 1)+1)
+  {
+    memset(buffer, 0, 100);
+    pack_speed(buffer, &i, 1, SPEED);
+    if(parse_speed(buffer, 100) != i)
+    {
+      printf("FAILED on speed: %d\n", i);
+      return 1;
+    }
+  }
+  printf("PASSED\n");
+  return 0;
+}
+
+int check_parse_time()
+{
+  uint8_t buffer[100];
+  printf("Checking parsing time\n");
+  for(uint32_t i = 0; i < 0x8FFFFF; i = (i << 1)+1)
+  {
+    memset(buffer, 0, 100);
+    pack_time(buffer, &i, 1, TIME);
+    if(parse_time(buffer, 100) != i)
+    {
+      printf("FAILED on time: %d\n", i);
+      return 1;
+    }
+  }
+  printf("PASSED\n");
+  return 0;
+}
+
+int check_parse_coords()
+{
+  uint8_t buffer[100];
+  uint32_t coords[2], coords_ckeck[2];
+  printf("Checking parsing coords\n");
+  for(uint32_t i = 0; i < 0x8FFFFF; i = (i << 1)+1)
+  {
+    memset(buffer, 0, 100);
+    coords[0] = i;
+    coords[1] = ~i;
+    pack_coords(buffer, coords, 1, COORDS_START);
+    parse_coords(buffer, 100, coords_ckeck);
+    if(coords_ckeck[0] != coords[0] || coords_ckeck[1] != coords[1])
+    {
+      printf("FAILED on coords: [%d, %d]\n", i, ~i);
+      return 1;
+    }
+  }
   printf("PASSED\n");
   return 0;
 }
@@ -297,9 +361,16 @@ int main(int argc, const char* argv[])
   if(check_speed() != 0)
     return 1;
 
-  // check_pack_data();
+  if(check_parse_speed() != 0)
+    return 1;
 
-  if(check_parse_info() != 0)
+  if(check_parse_time() != 0)
+    return 1;
+
+  if(check_parse_coords() != 0)
+    return 1;
+
+  if(check_info() != 0)
     return 1;
   
 }

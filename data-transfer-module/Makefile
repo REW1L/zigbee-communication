@@ -54,9 +54,11 @@ sampleapp: $(BIN) $(OBJS) protocol_logger protocol_core protocol_device lz4_comp
 	@$(CPP) -g $(COMPILE_FLAGS) $(LOCAL_FLAGS) $(OBJS)/PC_*.o $(OBJS)/SA_*.o $(OBJS)/lz4.o -o $(BIN)/sampleapp
 	@echo "Sampleapp linked!"
 
-unittests: $(BIN) $(OBJS) lz4
-	gcc -g -c -std=gnu11 -I./protocol/ -I./third-party/lz4 ./tests/protocol_tests.c -o $(OBJS)/protocol_tests.o
-	gcc -g -std=gnu11 $(OBJS)/lz4.o $(OBJS)/protocol_tests.o -o ./bin/tests
+unittests: $(BIN) $(OBJS) lz4_compress
+	@echo "Making executable tests..."
+	@$(CC) -g -c -std=gnu11 -I./protocol/ -I./third-party/lz4 ./tests/protocol_tests.c -o $(OBJS)/PT_protocol_tests.o
+	@$(CC) -g -std=gnu11 $(OBJS)/lz4.o $(OBJS)/PT_*.o -o ./bin/tests
+	@echo "Compiled successfully!"
 	@echo "\n\nRunning unit tests:"
 	time ./bin/tests
 
