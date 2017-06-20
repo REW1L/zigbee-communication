@@ -93,6 +93,33 @@ static raw_field pack_speed(char* dst,
   return ret;
 }
 
+static raw_field pack_direction(char* dst, 
+                                uint8_t* pdirection, 
+                                char to_dst, 
+                                uint8_t field_num)
+{
+  raw_field ret;
+  uint8_t i, offset;
+  uint8_t direction = *pdirection;
+  ret.size = DIRECTION_SIZE;
+  if (to_dst)
+    ret.data = dst;
+  else
+    ret.data = (char*)malloc(ret.size + 3);
+  *(ret.data) = field_num;
+  *(ret.data+1) = ret.size & 0xff;
+  *(ret.data+2) = (ret.size / 0x100) & 0xff;
+  offset = SIZE_SIZE + FIELD_ID_SIZE;
+  ret.size += SIZE_SIZE + FIELD_ID_SIZE;
+  for (i = 0; i < DIRECTION_SIZE; i++)
+  {
+    *(ret.data+offset+i) = (char)(direction&0xff);
+    direction /= 0x100;
+  }
+
+  return ret;
+}
+
 int8_t make_header(char* packet, 
                    uint16_t flags, 
                    uint32_t id, 
@@ -188,6 +215,10 @@ packets pack_info(RouteConfig inf, int16_t flags)
   offset += field.size;
 
   field = pack_coords(&packet[offset], inf.coords_dst, 1, COORDS_END);
+
+  offset += field.size;
+
+  field = pack_direction(&packet[offset], &(inf.direction), 1, DIRECTION);
 
   offset += field.size;
 

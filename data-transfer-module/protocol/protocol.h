@@ -12,6 +12,7 @@ extern "C" {
 #define COORD_SIZE 4
 #define TIME_SIZE 4
 #define SPEED_SIZE 4
+#define DIRECTION_SIZE 1
 #define FLAGS_SIZE 2
 #ifndef RF24
 #define FRAME_SIZE 50
@@ -42,6 +43,7 @@ typedef enum
   COORDS_END,
   TIME,
   SPEED,
+  DIRECTION,
   END_OF_FIELDS
 } FIELDS;
 
@@ -62,6 +64,7 @@ typedef struct {
   uint32_t coords_dst[2];
   uint32_t time;
   uint32_t speed;
+  uint8_t direction;
 } RouteConfig;
 
 typedef struct
