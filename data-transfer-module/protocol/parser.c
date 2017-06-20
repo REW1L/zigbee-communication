@@ -8,6 +8,7 @@
 static int parse_coords(const char* raw_data, size_t size, uint32_t *coords);
 static uint32_t parse_time(const char* raw_data, size_t size);
 static uint32_t parse_speed(const char* raw_data, size_t size);
+static uint8_t parse_direction(const char* raw_data, size_t size);
 
 ParsedData parse_received_data(const char* packet, int size)
 {
@@ -69,7 +70,7 @@ ParsedData parse_received_data(const char* packet, int size)
 RouteConfig parse_info(char* data, uint32_t size, uint32_t id)
 {
   RouteConfig ret = { .id = id, .speed = 0, .time = 0,
-    .coords_src = {0,0}, .coords_dst = {0,0}};
+    .coords_src = {0,0}, .coords_dst = {0,0}, .direction = 0};
   int i;
   for(i = 0; i < size;)
   {
@@ -101,6 +102,12 @@ RouteConfig parse_info(char* data, uint32_t size, uint32_t id)
         if(parse_coords(&data[i], size-i, ret.coords_dst) != 0)
           return ret;
         i += 3+2*COORD_SIZE;
+        break;
+      }
+      case DIRECTION:
+      {
+        ret.direction = parse_direction(&data[i], size-i);
+        i += 3+DIRECTION_SIZE;
         break;
       }
       default:
@@ -167,6 +174,22 @@ static int parse_coords(const char* raw_data, size_t size, uint32_t *coords)
   return 0;
 }
 
-
+static uint8_t parse_direction(const char* raw_data, size_t size)
+{
+  uint32_t direction = 0;
+  int j;
+  if(DIRECTION_SIZE + 3 <= size)
+  {
+    for (j = 0; j < DIRECTION_SIZE; j++)
+    {
+      direction += ((raw_data[j+3])&0xff) << (8*j);
+    }
+  }
+  else
+  {
+    return -1;
+  }
+  return direction;
+}
 
 

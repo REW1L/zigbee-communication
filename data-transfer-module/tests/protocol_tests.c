@@ -281,6 +281,7 @@ int check_info()
     inf.coords_dst[0] = i;
     inf.coords_dst[1] = i;
     inf.time = i;
+    inf.direction = (uint8_t)(i%0xff);
     if(check_parse_info(inf))
       return 1;
   }
@@ -346,6 +347,24 @@ int check_parse_coords()
   return 0;
 }
 
+int check_parse_direction()
+{
+  uint8_t buffer[100];
+  printf("Checking parsing direction\n");
+  for(uint8_t i = 0; i < 0xFF; i++)
+  {
+    memset(buffer, 0, 100);
+    pack_direction(buffer, &i, 1, TIME);
+    if(parse_direction(buffer, 100) != i)
+    {
+      printf("FAILED on direction: %d\n", i);
+      return 1;
+    }
+  }
+  printf("PASSED\n");
+  return 0;
+}
+
 
 int main(int argc, const char* argv[])
 {
@@ -368,6 +387,9 @@ int main(int argc, const char* argv[])
     return 1;
 
   if(check_parse_coords() != 0)
+    return 1;
+
+  if(check_parse_direction() != 0)
     return 1;
 
   if(check_info() != 0)
