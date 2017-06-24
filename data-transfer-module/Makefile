@@ -9,6 +9,7 @@ BIN = $(PROTOCOL_ROOT_DIR)/bin
 LIBS_DIR = $(PROTOCOL_ROOT_DIR)/libs
 PR_LOGGER_SRC = $(PROTOCOL_ROOT_DIR)/logging
 PROTOCOL_SRC = $(PROTOCOL_ROOT_DIR)/protocol
+STATIC_LIB_DIR = $(PROTOCOL_ROOT_DIR)/staticlib
 
 
 CPP_FLAGS = -g -c -std=gnu++11
@@ -38,6 +39,9 @@ $(OBJS):
 $(BIN):
 	mkdir -p $(BIN)
 
+$(STATIC_LIB_DIR):
+	mkdir -p $(STATIC_LIB_DIR)
+
 $(OBJS)/lz4.o: $(PROTOCOL_ROOT_DIR)/third-party/lz4/lz4.c
 	@$(CC) -c $(PROTOCOL_ROOT_DIR)/third-party/lz4/lz4.c -o $(OBJS)/lz4.o
 	@echo "Compiled [lz4] successfully!"
@@ -66,3 +70,10 @@ clean:
 	rm -rf $(BIN)
 	rm -rf $(OBJS)
 	rm -rf $(LIBS_DIR)
+
+
+staticlib: $(STATIC_LIB_DIR) $(OBJS) protocol_logger protocol_core protocol_device lz4_compress
+	@echo "Assembly of static lib.."
+	@ar cr $(STATIC_LIB_DIR)/libconnection.a $(OBJS)/PC_*.o $(OBJS)/lz4.o
+	@echo "Creating sampleapp with staticlib.."
+	@$(CPP) -g $(COMPILE_FLAGS) $(LOCAL_FLAGS) -std=c++11 $(PROTOCOL_ROOT_DIR)/sampleapp/sampleapp.cpp $(STATIC_LIB_DIR)/libconnection.a -o $(STATIC_LIB_DIR)/sampleapp
