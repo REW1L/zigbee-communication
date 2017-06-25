@@ -196,7 +196,7 @@ packets pack_info(RouteConfig inf, int16_t flags)
   raw_field field;
   packets ret;
 
-  size = (SIZE_SIZE+FIELD_ID_SIZE)*4 + SPEED_SIZE+TIME_SIZE+COORD_SIZE*4;
+  size = (SIZE_SIZE+FIELD_ID_SIZE)*5 + SPEED_SIZE+TIME_SIZE+COORD_SIZE*4+DIRECTION_SIZE;
 
   packet = (char*)calloc(size, 1);
 
