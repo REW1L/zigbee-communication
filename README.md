@@ -8,7 +8,14 @@ Tools for compiling sampleapp:
 - g++ (>=4.9)
 - automake 
 
-Makefile has multiple [flags](#flags)
+Makefile has multiple flags:
+
+- DEVICE
+  - ZIGBEE
+  - RF24 (it cannot be used now)
+- LOGGING
+  - STD (logs will be printed to standard output)
+  - FILE (logs will be stored in file with name ProtocolLog_yyyy_mm_dd_HH_MM_ss.log)
 
 Targets for Makefile:
 
@@ -31,13 +38,3 @@ Example:
 ```sh
 $ sudo ./bin/sampleapp /dev/ttyUSB0
 ```
-
-
-<a name="flags">Flags for make</a>
-
-- DEVICE
-  - ZIGBEE
-  - RF24 (it cannot be used now)
-- LOGGING
-  - STD (logs will be printed to standard output)
-  - FILE (logs will be stored in file with name ProtocolLog_yyyy_mm_dd_HH_MM_ss.log)
