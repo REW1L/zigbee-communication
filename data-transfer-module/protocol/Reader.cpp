@@ -116,10 +116,8 @@ int Reader::stop()
 void Reader::reader_function()
 {
   char* buffer = new char[1000];
-  ParsedData pd;
-  bool frame_is_ongoing = false;
   const char* preamble = PREAMBLE;
-  int bytes_received = 0, offset = 0, i, preamble_start;
+  int bytes_received = 0, offset = 0, preamble_start;
   while(!stopped)
   {
     bytes_received = this->device->read_from_device(buffer+offset, 100);

@@ -20,9 +20,6 @@ class WorkerThread
   private:
     void work();
     static std::mutex events_mtx;
-    const char *path;
-    int file_descriptor;
-    long timeout;
     std::thread working_thread;
     char stopped;
     ProtocolListener *pl;

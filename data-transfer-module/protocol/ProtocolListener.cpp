@@ -125,7 +125,6 @@ int ProtocolListener::parse_op(zigbee_packet zgbp, char* data, size_t size)
 
 int ProtocolListener::new_frame(proto_frame* data)
 {
-  uint64_t addresses[2];
   proto_frame* pf = (proto_frame*)data;
   zigbee_packet* zgbp;
   int offset;
@@ -143,15 +142,15 @@ int ProtocolListener::new_frame(proto_frame* data)
     zgbp = (zigbee_packet*)malloc(sizeof(zigbee_packet));
     zgbp->from = *(uint64_t*)(pf->data);
     offset = sizeof(uint64_t);
-    zgbp->to = *(uint64_t*)(pf->data+offset);
+    zgbp->to = *(uint64_t*)((char*)(pf->data)+offset);
     offset += sizeof(uint64_t);
-    zgbp->header_flags = *(uint16_t*)(pf->data+offset);
+    zgbp->header_flags = *(uint16_t*)((char*)(pf->data)+offset);
     offset += sizeof(uint16_t);
-    zgbp->number = *(uint8_t*)(pf->data+offset);
+    zgbp->number = *(uint8_t*)((char*)(pf->data)+offset);
     offset += sizeof(uint8_t);
-    zgbp->id = *(uint32_t*)(pf->data+offset);
+    zgbp->id = *(uint32_t*)((char*)(pf->data)+offset);
     offset += sizeof(uint32_t);
-    zgbp->op = *(uint8_t*)(pf->data+offset);
+    zgbp->op = *(uint8_t*)((char*)(pf->data)+offset);
     offset += sizeof(uint8_t);
 
     if (zgbp->op == 0)
@@ -163,7 +162,7 @@ int ProtocolListener::new_frame(proto_frame* data)
     zgbp->size = pf->size-offset;
 
     memset(zgbp->packet_data, 0, FRAME_SIZE);
-    memcpy(zgbp->packet_data, (void*)(pf->data+offset), FRAME_SIZE);
+    memcpy(zgbp->packet_data, (void*)((char*)(pf->data)+offset), FRAME_SIZE);
     Event ev = { .ev = NEW_PACKET, .data = zgbp };
     free(pf);
     WorkerThread::add_event(ev);
