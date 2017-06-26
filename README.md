@@ -1,31 +1,40 @@
+# Data transfer module
+
 Sampleapp is an example of how to use protocol in program.
 
-Getting working sampleapp you need to follow these steps:
-    1) make all dependecies
-      a) go to the ./third-party/RF24
-      b) run "make all" then "sudo make install"
-      c) do the same things for ./third-party/RF24Network
-      d) do the same things for ./third-party/RF24Mesh
-    2) make sampleapp
-      a) go to the root of project
-      b) run make all
+Tools for compiling sampleapp:
+- gcc (>=4.9)
+- g++ (>=4.9)
+- automake 
 
-You can also copy-paste lines below:
-cd ./third-party/RF24
-make all
-sudo make install
-cd ../RF24Network
-make all
-sudo make install
-cd ../RF24Mesh
-make all
-sudo make install
-cd ../../
-make all
+Makefile has multiple [flags](#flags)
+
+Targets for Makefile:
+- clean (cleaning all compiled objects)
+- sampleapp (making application for debugging module)
+- unittests (making and executing unit tests for data transfer module)
+- staticlib (making static library)
+
+Example:
+```sh
+$ make sampleapp DEVICE=ZIGBEE LOGGING=STD
+```
 
 Run sampleapp:
-sudo ./bin/sampleapp <unique id>
+```sh
+$ sudo ./bin/sampleapp <path to XBEE pipe>
+```
+
 Example:
-<pre><code>
-sudo ./bin/sampleapp 3
-</code></pre>
+```sh
+$ sudo ./bin/sampleapp /dev/ttyUSB0
+```
+
+
+<a name="flags">Flags for make</a>
+- DEVICE
+  - ZIGBEE
+  - RF24 (it cannot be used now)
+- LOGGING
+  - STD (logs will be printed to standard output)
+  - FILE (logs will be stored in file with name ProtocolLog_yyyy_mm_dd_HH_MM_ss.log)
