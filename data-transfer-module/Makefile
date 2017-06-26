@@ -70,10 +70,11 @@ clean:
 	rm -rf $(BIN)
 	rm -rf $(OBJS)
 	rm -rf $(LIBS_DIR)
+	rm -rf $(STATIC_LIB_DIR)
 
 
 staticlib: $(STATIC_LIB_DIR) $(OBJS) protocol_logger protocol_core protocol_device lz4_compress
 	@echo "Assembly of static lib.."
 	@ar cr $(STATIC_LIB_DIR)/libconnection.a $(OBJS)/PC_*.o $(OBJS)/lz4.o
 	@echo "Creating sampleapp with staticlib.."
-	@$(CPP) -g $(COMPILE_FLAGS) $(LOCAL_FLAGS) -std=c++11 $(PROTOCOL_ROOT_DIR)/sampleapp/sampleapp.cpp $(STATIC_LIB_DIR)/libconnection.a -o $(STATIC_LIB_DIR)/sampleapp
+	@$(CPP) -g $(COMPILE_FLAGS) $(LOCAL_FLAGS) -std=gnu++11 $(PROTOCOL_ROOT_DIR)/sampleapp/sampleapp.cpp $(STATIC_LIB_DIR)/libconnection.a -o $(BIN)/sampleapp
