@@ -64,7 +64,7 @@ unittests: $(BIN) $(OBJS) lz4_compress
 	@$(CC) -g -std=gnu11 $(OBJS)/lz4.o $(OBJS)/PT_*.o -o ./bin/tests
 	@echo "Compiled successfully!"
 	@echo "\n\nRunning unit tests:"
-	time ./bin/tests
+	./bin/tests
 
 clean:
 	rm -rf $(BIN)
