@@ -12,10 +12,10 @@ PROTOCOL_SRC = $(PROTOCOL_ROOT_DIR)/protocol
 STATIC_LIB_DIR = $(PROTOCOL_ROOT_DIR)/staticlib
 
 
-CPP_FLAGS = -g -c -std=gnu++11
-C_FLAGS = -g -c -std=gnu11
+CPP_FLAGS = -g -c -std=gnu++11 -Wall 
+C_FLAGS = -g -c -std=gnu11 -Wall 
 LOCAL_FLAGS =
-COMPILE_FLAGS = -pthread -Wall 
+COMPILE_FLAGS = -pthread  
 
 DEVICE ?= RF24
 
@@ -64,7 +64,7 @@ unittests: $(BIN) $(OBJS) lz4_compress
 	@$(CC) -g -std=gnu11 $(OBJS)/lz4.o $(OBJS)/PT_*.o -o ./bin/tests
 	@echo "Compiled successfully!"
 	@echo "\n\nRunning unit tests:"
-	time ./bin/tests
+	./bin/tests
 
 clean:
 	rm -rf $(BIN)

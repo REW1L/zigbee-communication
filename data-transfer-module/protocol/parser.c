@@ -115,6 +115,7 @@ RouteConfig parse_info(char* data, uint32_t size, uint32_t id)
         return ret;
     }
   }
+  return ret;
 }
 
 static uint32_t parse_speed(const char* raw_data, size_t size)
@@ -191,5 +192,3 @@ static uint8_t parse_direction(const char* raw_data, size_t size)
   }
   return direction;
 }
-
-

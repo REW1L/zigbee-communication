@@ -5,8 +5,6 @@
 #include "lz4.h"
 #include "common_functions.h"
 
-static void*** func_array;
-
 static raw_field pack_coords(char* dst, 
                              uint32_t* coords, 
                              char to_dst, 
@@ -190,9 +188,8 @@ int8_t make_header(char* packet,
 packets pack_info(RouteConfig inf, int16_t flags)
 {
   char* packet;
-  char* raw_data;
-  int8_t offset = 0, i, temp;
-  int32_t size, field_offset = 0, raw_offset = 0, free_space;
+  int8_t offset = 0, temp;
+  int32_t size;
   raw_field field;
   packets ret;
 
@@ -234,8 +231,8 @@ packets make_packets(char* data,
                       uint32_t id, 
                       uint8_t op)
 {
-  uint16_t i, offset, compressed_size = 0;
-  char *flat_packets, *compressed_data;
+  uint16_t i, offset;
+  char *flat_packets;
   packets ret = { .raw_data = NULL, .data = NULL, .number = 0};
 
   if(flags & COMPRESS_5000)
