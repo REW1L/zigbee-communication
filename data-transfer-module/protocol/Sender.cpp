@@ -71,3 +71,27 @@ int Sender::send(RouteConfig inf)
   return 0;
 }
 
+int Sender::send(char* array, size_t size, uint32_t from)
+{
+  LOG_INFO("SENDER", "Sending size: %d", size);
+  char temp_frame[FRAME_SIZE+PREAMBLE_SIZE+2+sizeof(uint64_t)*2+30];
+  packets ep = make_packets(array, size, 0, from, OP_RAW_DATA);
+
+  LOG_INFO("SENDER", "Sending %d packets", ep.number);
+
+  // TODO: make sending packets more stable
+  int temp;
+  memcpy(temp_frame, PREAMBLE, PREAMBLE_SIZE);
+  *(uint64_t*)(&temp_frame[PREAMBLE_SIZE]) = this->device->mac;
+  *(uint64_t*)(&temp_frame[PREAMBLE_SIZE+sizeof(uint64_t)]) = 0xFFFFFFFFFFFFFFFFLL; // broadcast forever
+  for (int i = 0; i < ep.number; i++)
+  {
+    memcpy(&(temp_frame[PREAMBLE_SIZE+sizeof(uint64_t)*2]), ep.data[i], FRAME_SIZE);
+    *(uint16_t*)(&temp_frame[PREAMBLE_SIZE+sizeof(uint64_t)*2+FRAME_SIZE]) = pr_crc16(temp_frame, FRAME_SIZE+PREAMBLE_SIZE);
+    temp = this->device->send_frame(temp_frame, FRAME_SIZE+PREAMBLE_SIZE+2+sizeof(uint64_t)*2);
+    LOG_INFO("SENDER", "Sent bytes: %d", temp);
+  }
+  free(ep.data);
+  free(ep.raw_data);
+
+}

@@ -2,6 +2,8 @@
 #include "ProtocolListener.hpp"
 #include "ProtocolLogger.hpp"
 #include "parser.h"
+#include "protocol.h"
+#include "RawDataPacket.hpp"
 
 #include <cstdio>
 
@@ -26,10 +28,15 @@ void ProtocolListener::notify(Event ev)
 
 int ProtocolListener::new_packet(zigbee_packet* zgbp)
 {
-  // TODO: make compression
-  LOG_INFO("PC_LISTENER", "New packet: flags: %02hhX number: %d id: %u size: %d op: %d", 
+  LOG_INFO("PC_LISTENER", "New packet: flags: %02hhX number: %d id: %u size: %d op: %d",
     zgbp->header_flags, zgbp->number, zgbp->id, zgbp->size, zgbp->op);
-  if(zgbp->header_flags & COMPRESS_5000)
+
+  zigbee_packet* packet = new zigbee_packet;
+  memcpy(packet, zgbp, sizeof(zigbee_packet));
+  memcpy(packet->packet_data, zgbp->packet_data, zgbp->size);
+
+  // TODO: make compression
+  if(packet->header_flags & COMPRESS_5000)
   {
     LOG_WARNING("PC_LISTENER", "Compression is not done yet. %d", 1);
     return 1;
@@ -37,15 +44,15 @@ int ProtocolListener::new_packet(zigbee_packet* zgbp)
   if(packets_lists.empty())
   {
     packets_lists.push_back(new std::list<zigbee_packet*>());
-    packets_lists.back()->push_back(zgbp);
+    packets_lists.back()->push_back(packet);
   }
   for(std::list<zigbee_packet*> *lst : packets_lists)
   {
-    if(lst->front()->from == zgbp->from)
+    if(lst->front()->from == packet->from)
     {
-      LOG_INFO("PC_LISTENER", "GET PACKET FROM: 0x%llX", zgbp->from);
-      if(lst->front() != zgbp)
-        lst->push_back(zgbp);
+      LOG_INFO("PC_LISTENER", "GOT PACKET FROM: 0x%llX", packet->from);
+      if(lst->front() != packet)
+        lst->push_back(packet);
       long sum = 0, i = 0; // first message has zero in number
       zigbee_packet* max = lst->front();
       char end_found = 0;
@@ -104,28 +111,38 @@ int ProtocolListener::parse_op(zigbee_packet zgbp, char* data, size_t size)
 {
   switch(zgbp.op)
   {
-    case INFO:
+    case OP_INFO:
     {
-      LOG_INFO("PC_LISTENER", "Received full packet for RouteConfig, size: %d, id: ", size, zgbp.id);
+      LOG_INFO("PC_LISTENER", "Received full packet for RouteConfig, size: %d, id: %d", size, zgbp.id);
       RouteConfig *inf = new RouteConfig;
       *inf = parse_info(data, size, zgbp.id);
       LOG_INFO("PC_LISTENER", "Parsed RouteConfig id: %u coords_src: [%u, %u], "
          "coords_dst: [%u, %u], speed: %u, time: %u", 
          inf->id, inf->coords_src[0], inf->coords_src[1], inf->coords_dst[0],
          inf->coords_dst[1], inf->speed, inf->time);
-      delete data;
       Event ev = { .ev = INFO, .data = inf };
+      WorkerThread::add_event(ev);
+      break;
+    }
+    case OP_RAW_DATA:
+    {
+      LOG_INFO("PC_LISTENER", "Received full packet with raw data, size: %d, id: %d", size, zgbp.id);
+      char* array = new char[size];
+      memcpy(array, data, size);
+      RawDataPacket *packet = new RawDataPacket(zgbp.id, size, array);
+      Event ev = { .ev = RECEIVED_RAW_DATA_PACKET, .data = packet };
       WorkerThread::add_event(ev);
       break;
     }
     default: return 1;
   }
+  delete data;
   return 0;
 }
 
 int ProtocolListener::new_frame(proto_frame* data)
 {
-  proto_frame* pf = (proto_frame*)data;
+  proto_frame* pf = data;
   zigbee_packet* zgbp;
   int offset;
 
@@ -144,7 +161,7 @@ int ProtocolListener::new_frame(proto_frame* data)
     offset = sizeof(uint64_t);
     zgbp->to = *(uint64_t*)((char*)(pf->data)+offset);
     offset += sizeof(uint64_t);
-    zgbp->header_flags = *(uint16_t*)((char*)(pf->data)+offset);
+    zgbp->header_flags = *(uint8_t*)((char*)(pf->data)+offset);
     offset += sizeof(uint16_t);
     zgbp->number = *(uint8_t*)((char*)(pf->data)+offset);
     offset += sizeof(uint8_t);
@@ -164,7 +181,6 @@ int ProtocolListener::new_frame(proto_frame* data)
     memset(zgbp->packet_data, 0, FRAME_SIZE);
     memcpy(zgbp->packet_data, (void*)((char*)(pf->data)+offset), FRAME_SIZE);
     Event ev = { .ev = NEW_PACKET, .data = zgbp };
-    free(pf);
     WorkerThread::add_event(ev);
   }
   return 0;

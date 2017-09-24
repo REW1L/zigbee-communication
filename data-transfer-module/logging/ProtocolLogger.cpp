@@ -7,6 +7,8 @@
 #include <thread>
 #include <chrono>
 
+#ifndef LOGGING_NONE
+
 std::string log_file_name;
 std::list<std::string> out_list;
 std::mutex log_mtx;
@@ -82,3 +84,10 @@ ProtocolLogger::ProtocolLogger()
   log_file_name = std::string(file_name);
   this->log_thread = std::thread(&ProtocolLogger::out_thread, this);
 }
+
+#else
+void ProtocolLogger::log(const char *prefix, const char *format, ...) {}
+void ProtocolLogger::out_thread() {}
+void ProtocolLogger::flush() {}
+ProtocolLogger::ProtocolLogger() {}
+#endif

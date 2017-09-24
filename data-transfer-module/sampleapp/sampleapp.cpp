@@ -18,6 +18,7 @@
 int main(int argc, char const *argv[])
 {
   char buf[500], input[500];
+  size_t number;
   time_t timer; // only first 4 bytes will be used
 
   RouteConfig inf, infp;
@@ -136,6 +137,14 @@ int main(int argc, char const *argv[])
     {
       infp.time = time(&timer);
       sr.send(infp);
+    }
+
+    if(strncmp(input, "send_text", 9) == 0)
+    {
+      std::cout << "Input some string" << std::endl;
+      scanf("%500[^\n]", input);
+      for(number = 0; input[number] != '\n' && input[number] != '\r' && input[number] != '\0'; number++);
+      sr.send(input, number, inf.id);
     }
 
     if(strcmp(input, "print_info\n") == 0)

@@ -23,6 +23,7 @@ public:
   Sender() { this->fd = 1; }
   #endif
   int send(RouteConfig inf);
+  int send(char* array, size_t size, uint32_t from);
   int getId() { return fd; }
 // private:
   Device *device;

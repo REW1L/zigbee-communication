@@ -105,8 +105,8 @@ static raw_field pack_direction(char* dst,
   else
     ret.data = (char*)malloc(ret.size + 3);
   *(ret.data) = field_num;
-  *(ret.data+1) = ret.size & 0xff;
-  *(ret.data+2) = (ret.size / 0x100) & 0xff;
+  *(ret.data+1) = (uint8_t)(ret.size & 0xff);
+  *(ret.data+2) = (uint8_t)((ret.size / 0x100) & 0xff);
   offset = SIZE_SIZE + FIELD_ID_SIZE;
   ret.size += SIZE_SIZE + FIELD_ID_SIZE;
   for (i = 0; i < DIRECTION_SIZE; i++)
@@ -133,7 +133,7 @@ int8_t make_header(char* packet,
 
   for (i = 0; i < FLAGS_SIZE; i++)
   {
-    packet[i] = (flags_temp)&0xff;
+    packet[i] = (uint8_t)((flags_temp)&0xff);
     flags_temp /= 0x100;
   }
 
@@ -141,7 +141,7 @@ int8_t make_header(char* packet,
 
   for (i = 0; i < MESSAGE_NUMBER_SIZE; i++)
   {
-    packet[offset+i] = (message_number)&0xff;
+    packet[offset+i] = (uint8_t)((message_number)&0xff);
     message_number /= 0x100;
   }
 
@@ -149,7 +149,7 @@ int8_t make_header(char* packet,
 
   for (i = 0; i < ID_SIZE; i++)
   {
-    packet[offset+i] = (id)&0xff;
+    packet[offset+i] = (uint8_t)((id)&0xff);
     id /= 0x100;
   }
 
@@ -157,7 +157,7 @@ int8_t make_header(char* packet,
 
   for (i = 0; i < OP_SIZE; i++)
   {
-    packet[offset+i] = (op)&0xff;
+    packet[offset+i] = (uint8_t)((op)&0xff);
     op /= 0x100;
   }
 
@@ -167,7 +167,7 @@ int8_t make_header(char* packet,
   {
     for (i = 0; i < COMPRESS_SIZE; i++)
     {
-      packet[offset+i] = (real_size)&0xff;
+      packet[offset+i] = (uint8_t)((real_size)&0xff);
       real_size /= 0x100;
     }
 
@@ -175,7 +175,7 @@ int8_t make_header(char* packet,
 
     for (i = 0; i < COMPRESS_SIZE; i++)
     {
-      packet[offset+i] = (compressed_size)&0xff;
+      packet[offset+i] = (uint8_t)((compressed_size)&0xff);
       compressed_size /= 0x100;
     }
     
@@ -185,7 +185,7 @@ int8_t make_header(char* packet,
   return offset;
 }
 
-packets pack_info(RouteConfig inf, int16_t flags)
+packets pack_info(RouteConfig inf, int8_t flags)
 {
   char* packet;
   int8_t offset = 0, temp;

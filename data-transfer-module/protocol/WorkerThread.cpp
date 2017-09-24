@@ -1,5 +1,6 @@
 #include "WorkerThread.hpp"
 #include "ProtocolLogger.hpp"
+#include "Events.h"
 #include <thread>
 #include <chrono>
 
@@ -53,6 +54,8 @@ void WorkerThread::work()
       {
         lst->notify(ev);
       }
+      if(ev.data != NULL)
+        delete ev.data;
     }
     std::this_thread::sleep_for(std::chrono::microseconds(10000));
   }

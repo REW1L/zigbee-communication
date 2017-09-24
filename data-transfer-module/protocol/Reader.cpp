@@ -139,6 +139,7 @@ void Reader::reader_function()
           pf->size = FRAME_SIZE+sizeof(uint64_t)*2;
           memcpy(pf->data, &(buffer[preamble_start+PREAMBLE_SIZE]), FRAME_SIZE+sizeof(uint64_t)*2);
           WorkerThread::add_event(ev);
+
           memcpy(buffer, &(buffer[preamble_start+PREAMBLE_SIZE+FRAME_SIZE+sizeof(uint64_t)*2]), 
             offset-(preamble_start+PREAMBLE_SIZE+FRAME_SIZE+sizeof(uint64_t)*2));
           memset(&(buffer[offset-(preamble_start+PREAMBLE_SIZE+FRAME_SIZE+sizeof(uint64_t)*2)]), 0, 400);

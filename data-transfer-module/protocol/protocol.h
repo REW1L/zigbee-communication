@@ -15,7 +15,7 @@ extern "C" {
 #define DIRECTION_SIZE 1
 #define FLAGS_SIZE 2
 #ifndef RF24
-#define FRAME_SIZE 50
+#define FRAME_SIZE (uint16_t)50
 #else
 #define FRAME_SIZE 22
 #endif
@@ -25,6 +25,7 @@ static const char PREAMBLE[] = {6,6,0x3d};
 #define OP_SIZE 1
 #define COMPRESS_SIZE 4
 #define OP_INFO 1
+#define OP_RAW_DATA 2
 #define SIZE_SIZE 2
 #define FIELD_ID_SIZE 1
 #define CRC16_SIZE 2

@@ -7,7 +7,7 @@ extern "C" {
 
 #include "protocol.h"
 
-packets pack_info(RouteConfig inf, int16_t flags);
+packets pack_info(RouteConfig inf, int8_t flags);
 packets compress_packets(packets packets, uint32_t id, uint8_t flags);
 packets make_packets(char* data, size_t size, uint8_t flags, uint32_t id, uint8_t op);
 

@@ -394,5 +394,5 @@ int main(int argc, const char* argv[])
 
   if(check_info() != 0)
     return 1;
-  
+
 }

@@ -11,10 +11,17 @@
 #define MAX_LOG_SIZE 4096
 #define LOGGING_SLEEP 10
 
+#ifndef LOGGING_NONE
 #define LOG_INFO(prefix, format, ...) ProtocolLogger::log("[I] [" prefix "]", format, __VA_ARGS__)
 #define LOG_DEBUG(prefix, format, ...) ProtocolLogger::log("[D] [" prefix "]", format, __VA_ARGS__)
 #define LOG_ERROR(prefix, format, ...) ProtocolLogger::log("[E] [" prefix "]", format, __VA_ARGS__)
 #define LOG_WARNING(prefix, format, ...) ProtocolLogger::log("[W] [" prefix "]", format, __VA_ARGS__)
+#else // if logging is disabled
+#define LOG_INFO(prefix, format, ...) {}
+#define LOG_DEBUG(prefix, format, ...) {}
+#define LOG_ERROR(prefix, format, ...) {}
+#define LOG_WARNING(prefix, format, ...) {}
+#endif
 
 class ProtocolLogger
 {
