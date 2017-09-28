@@ -14,16 +14,11 @@ extern "C" {
 #define SPEED_SIZE 4
 #define DIRECTION_SIZE 1
 #define FLAGS_SIZE 2
-#ifndef RF24
 #define FRAME_SIZE (uint16_t)50
-#else
-#define FRAME_SIZE 22
-#endif
 #define PREAMBLE_SIZE 3
 static const char PREAMBLE[] = {6,6,0x3d};
 #define MESSAGE_NUMBER_SIZE 1
 #define OP_SIZE 1
-#define COMPRESS_SIZE 4
 #define OP_INFO 1
 #define OP_RAW_DATA 2
 #define SIZE_SIZE 2
@@ -31,11 +26,9 @@ static const char PREAMBLE[] = {6,6,0x3d};
 #define CRC16_SIZE 2
 
 #define HEADER_SIZE (ID_SIZE+FLAGS_SIZE+MESSAGE_NUMBER_SIZE+OP_SIZE)
-#define HEADER_COMPRESSED_SIZE (HEADER_SIZE+COMPRESS_SIZE)
 #define FRAME_WITHOUT_HEADER (FRAME_SIZE-HEADER_SIZE)
 
 #define LAST_MESSAGE 0b01
-#define COMPRESS_5000 0b10
 
 typedef enum
 {

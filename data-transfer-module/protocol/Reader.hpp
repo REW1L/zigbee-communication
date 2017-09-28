@@ -3,30 +3,19 @@
 
 #include <thread>
 #include <chrono>
-#if !defined(RF24)
-  #include "../zigbee/device.hpp"
-#else
-  #include "../RF24/device.hpp"
-#endif
 #include <cstdint>
+
+#include "../zigbee/device.hpp"
 
 class Reader
 {
 public:
-  #ifndef RF24
-    Reader(const char *path, long long timeout = 1000);
-    Reader(int fd, long long timeout = 1000);
-  #else
-    Reader(int nodeID, long long timeout = 1000);
-  #endif
+  Reader(const char *path, long long timeout = 1000);
+  Reader(int fd, long long timeout = 1000);
   virtual ~Reader();
   int run();
-  #ifndef RF24
-    int restart(const char *path, long long timeout);
-    int restart(int fd, long long timeout);
-  #else
-    int  restart(int nodeID, long long timeout);
-  #endif
+  int restart(const char *path, long long timeout);
+  int restart(int fd, long long timeout);
   int restart(long long timeout);
   int stop();
   int getId() { return fd; }

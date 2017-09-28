@@ -35,12 +35,6 @@ int ProtocolListener::new_packet(zigbee_packet* zgbp)
   memcpy(packet, zgbp, sizeof(zigbee_packet));
   memcpy(packet->packet_data, zgbp->packet_data, zgbp->size);
 
-  // TODO: make compression
-  if(packet->header_flags & COMPRESS_5000)
-  {
-    LOG_WARNING("PC_LISTENER", "Compression is not done yet. %d", 1);
-    return 1;
-  }
   if(packets_lists.empty())
   {
     packets_lists.push_back(new std::list<zigbee_packet*>());
@@ -77,7 +71,6 @@ int ProtocolListener::new_packet(zigbee_packet* zgbp)
             });
           char *raw_data = new char[i*FRAME_SIZE];
 
-          // TODO: make compression
           zigbee_packet to_parse = *(lst->front());
           i = 0;
           for(zigbee_packet *zg : *lst)

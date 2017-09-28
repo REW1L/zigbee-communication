@@ -1,7 +1,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <pthread.h>
 #include <time.h>
 #include "protocol_encode.c"
 #include "parser.c"
@@ -76,7 +75,7 @@ int check_header_encoding(uint16_t flags, uint32_t id, char mes_num, char op)
 {
   char buff[100];
   memset(buff, 0, 100);
-  make_header(buff, flags, id, mes_num, op, 0, 0);
+  make_header(buff, flags, id, mes_num, op, 0);
   if(buff[0] != (char)(flags&0xff) || buff[1] != (char)((flags/0x100)&0xff))
   {
     printf("Error in flags encoding e: %02hX a: %02hhX %02hhX\n", 

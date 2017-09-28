@@ -12,7 +12,6 @@
 
 // #include <stdio.h>
 
-#if !defined(RF24)
 Reader::Reader(const char *path, long long timeout)
 {
   this->path = path;
@@ -28,18 +27,6 @@ Reader::Reader(int fd, long long timeout)
   this->fd = fd;
   this->stopped = 0;
 }
-#else
-Reader::Reader(int nodeID, long long timeout)
-{
-  LOG_INFO("READER", "Configuring node %d", nodeID);
-  this->path = NULL;
-  this->timeout = std::chrono::nanoseconds(timeout);
-  this->fd = this->device.configure_device(nodeID);
-  LOG_INFO("READER", "Configured %s", 
-           (fd != 0)? "Master" : "Slave");
-  this->stopped = 0;
-}
-#endif
 
 Reader::~Reader()
 {
@@ -57,7 +44,7 @@ int Reader::run()
 
   return 0;
 }
-#if !defined(RF24)
+
 int Reader::restart(const char *path, long long timeout)
 {
   this->stopped = 1;
@@ -81,21 +68,6 @@ int Reader::restart(int fd, long long timeout)
 
   return this->run();
 }
-
-#else
-
-int Reader::restart(int nodeID, long long timeout)
-{
-  this->stopped = 1;
-  this->reader.join();
-  this->path = NULL;
-  this->timeout = std::chrono::nanoseconds(timeout);
-  this->fd = configure_device(nodeID);
-  this->stopped = 0;
-
-  return this->run();
-}
-#endif
 
 int Reader::restart(long long timeout)
 {

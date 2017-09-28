@@ -9,11 +9,7 @@
 #include "../logging/ProtocolLogger.hpp"
 #include "MyUserListener.cpp"
 
-#if !defined(RF24)
-  #include "../zigbee/device.hpp"
-#else
-  #include "../RF24/device.hpp"
-#endif
+#include "../zigbee/device.hpp"
 
 int main(int argc, char const *argv[])
 {
@@ -25,21 +21,13 @@ int main(int argc, char const *argv[])
 
   if(argc < 2)
   {
-    #ifdef RF24
-    printf("Usage: sudo sampleapp <id>\n id: id of car (must be from 1 to 8)\n");
-    #else
     printf("Usage: sudo sampleapp <device>\n device: device to be used\n");
-    #endif
     return 1;
   }
 
   printf("Configuring...\n");
 
-  #ifdef RF24
-  inf.id = atoi(argv[1]); // id must be unique number (1-8)
-  #else
   inf.id = 1;
-  #endif
 
   if(inf.id > 8 || inf.id < 1)
   {
@@ -49,15 +37,10 @@ int main(int argc, char const *argv[])
 
 // configure protocol
 
-  #ifdef RF24
-  Reader rt(inf.id, 500LL); // configuring node with id and reading timeout in nanoseconds
-  Sender sr;
-  #else
   // this is only right sequence
   Reader rt(argv[1], 500LL); // configuring reading timeout in nanoseconds
   Sender sr(rt.device);
   LOG_INFO("SA", "Configured with device: %s", argv[1]);
-  #endif
   WorkerThread wt;
   ProtocolLogger pl;
 
@@ -78,11 +61,7 @@ int main(int argc, char const *argv[])
   inf.time = time(&timer);
 
   infp = inf;
-  #ifdef RF24
-  printf("%s was configured.\n", (rt.getId() == 1)? "Master" : "Node" );
-  #else
   printf("Data transfer module was configured.\n");
-  #endif
   
   while (1)
   {

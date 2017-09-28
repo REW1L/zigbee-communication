@@ -1,9 +1,5 @@
 #include <string.h>
 #include "protocol_encode.h"
-#include <stdio.h>
-#include <time.h>
-#include "lz4.h"
-#include "common_functions.h"
 
 static raw_field pack_coords(char* dst, 
                              uint32_t* coords, 
@@ -123,8 +119,7 @@ int8_t make_header(char* packet,
                    uint32_t id, 
                    uint8_t message_number, 
                    uint8_t op,
-                   uint16_t real_size,
-                   uint16_t compressed_size)
+                   uint16_t size)
 {
   uint8_t offset, i;
   uint16_t flags_temp = flags;
@@ -162,26 +157,6 @@ int8_t make_header(char* packet,
   }
 
   offset += OP_SIZE;
-
-  if (flags & COMPRESS_5000)
-  {
-    for (i = 0; i < COMPRESS_SIZE; i++)
-    {
-      packet[offset+i] = (uint8_t)((real_size)&0xff);
-      real_size /= 0x100;
-    }
-
-    offset += COMPRESS_SIZE;
-
-    for (i = 0; i < COMPRESS_SIZE; i++)
-    {
-      packet[offset+i] = (uint8_t)((compressed_size)&0xff);
-      compressed_size /= 0x100;
-    }
-    
-    offset += COMPRESS_SIZE;
-  }
-
   return offset;
 }
 
@@ -200,8 +175,6 @@ packets pack_info(RouteConfig inf, int8_t flags)
   field = pack_speed(&packet[offset], &(inf.speed), 1, SPEED);
 
   offset = field.size;
-
-  temp = offset; // DEBUG
 
   field = pack_coords(&packet[offset], inf.coords_src, 1, COORDS_START);
 
@@ -235,12 +208,6 @@ packets make_packets(char* data,
   char *flat_packets;
   packets ret = { .raw_data = NULL, .data = NULL, .number = 0};
 
-  if(flags & COMPRESS_5000)
-  {
-    // printf("Compress is not done yet.\n");
-    // TODO: COMPRESSED PACKETS
-  }
-
   if(size/(FRAME_WITHOUT_HEADER) < 256)
   {
     ret.number = (uint8_t)(size/(FRAME_WITHOUT_HEADER));
@@ -257,7 +224,7 @@ packets make_packets(char* data,
         flags |= LAST_MESSAGE;
       ret.data[i] = &(flat_packets[offset]);
 
-      make_header(&(flat_packets[offset]), flags, id, i, op, 0, 0);
+      make_header(&(flat_packets[offset]), flags, id, i, op, 0);
 
       if(size > FRAME_WITHOUT_HEADER)
       {
@@ -275,55 +242,4 @@ packets make_packets(char* data,
     }
   }
   return ret; 
-}
-
-packets compress_packets(packets pckts, uint32_t id, uint8_t flags)
-{
-  packets ep;
-  uint16_t i;
-  uint8_t offset;
-  size_t size;
-  size_t max_size = LZ4_compressBound(pckts.number*FRAME_SIZE);
-  char* raw_data = calloc(max_size, 1);
-  flags |= COMPRESS_5000;
-  ep.number = 0;
-  for(i = 0; i < 5000; i++)
-  {
-    size = LZ4_compress_fast(pckts.raw_data, raw_data, 
-      pckts.number*FRAME_SIZE, max_size, 5);
-    if(size < 1)
-    {
-      free(raw_data);
-      return pckts;
-    }
-  }
-
-  if (size  <= ( FRAME_SIZE - HEADER_COMPRESSED_SIZE ))
-  {
-    max_size = 1;
-  }
-  else
-  {
-    max_size = size - ( FRAME_SIZE - HEADER_COMPRESSED_SIZE );
-    max_size = 1 + (max_size - ( FRAME_WITHOUT_HEADER ))/(FRAME_WITHOUT_HEADER) 
-    + ((max_size)%(FRAME_WITHOUT_HEADER))? 1 : 0;
-  }
-
-  ep.number = max_size;
-  ep.raw_data = calloc(max_size*FRAME_SIZE, 1);
-
-  offset = make_header(ep.raw_data, 
-    (--max_size)? flags : (flags | LAST_MESSAGE), id, 0, 0, 
-    pckts.number*FRAME_SIZE, size);
-
-  for(i = 1; i <= max_size; i++)
-  {
-    offset = make_header(&ep.raw_data[ep.number*FRAME_SIZE], 
-      (i != max_size)? flags : (flags | LAST_MESSAGE), id, i, 0, 0, 0);
-    memcpy(&ep.raw_data[i*FRAME_SIZE], 
-      &raw_data[FRAME_WITHOUT_HEADER*i], FRAME_WITHOUT_HEADER);
-  }
-
-  free(raw_data);
-  return ep;
 }

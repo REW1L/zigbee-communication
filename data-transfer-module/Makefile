@@ -27,11 +27,7 @@ OBJECTS=
 DEVICE ?= RF24
 
 
-ifeq ($(DEVICE), RF24)
-include $(PROTOCOL_ROOT_DIR)/RF24/RF24.mk
-else
 include $(PROTOCOL_ROOT_DIR)/zigbee/zigbee.mk
-endif
 
 ifeq ($(LINKTYPE), STATIC)
 LIBTYPE=staticlib
@@ -43,7 +39,7 @@ SHARED_LIBS_DIRS+=-L$(SHARED_LIB_DIR)
 SHARED_LIBS+=-lconnection
 else
 LIBTYPE=withoutlib
-OBJECTS+=$(OBJS)/PC_*.o $(OBJS)/lz4.o
+OBJECTS+=$(OBJS)/PC_*.o
 endif
 
 include $(PROTOCOL_SRC)/protocol-core.mk
@@ -65,27 +61,21 @@ $(STATIC_LIB_DIR):
 $(SHARED_LIB_DIR):
 	mkdir -p $(SHARED_LIB_DIR)
 
-$(OBJS)/lz4.o: $(PROTOCOL_ROOT_DIR)/third-party/lz4/lz4.c
-	@$(CC) -c $(PROTOCOL_ROOT_DIR)/third-party/lz4/lz4.c -o $(OBJS)/lz4.o
-	@echo "Compiled [lz4] successfully!"
-
-lz4_compress: $(OBJS)/lz4.o
-
 
 $(OBJS)/SA_sampleapp.o: $(PROTOCOL_ROOT_DIR)/sampleapp/sampleapp.cpp
 	@$(CPP) $(CPP_FLAGS) $(LOCAL_FLAGS) -I./protocol/ $(PROTOCOL_ROOT_DIR)/sampleapp/sampleapp.cpp -o $(OBJS)/SA_sampleapp.o
 	@echo "Compiled [SA_sampleapp] successfully!"
 
-sampleapp: $(BIN) $(OBJS) protocol_logger protocol_core protocol_device lz4_compress $(OBJS)/SA_sampleapp.o $(LIBTYPE)
+sampleapp: $(BIN) $(OBJS) protocol_logger protocol_core protocol_device $(OBJS)/SA_sampleapp.o $(LIBTYPE)
 	@echo "Creating sampleapp.."
 	@$(CPP) -g $(COMPILE_FLAGS) $(LOCAL_FLAGS) -std=gnu++11 $(SHARED_LIBS_DIRS) $(SHARED_LIBS)\
 	 $(STATIC_LIBS) $(OBJECTS) $(PROTOCOL_ROOT_DIR)/sampleapp/sampleapp.cpp -o $(BIN)/sampleapp
 	@echo "Sampleapp linked!"
 
-unittests: $(BIN) $(OBJS) lz4_compress
+unittests: $(BIN) $(OBJS)
 	@echo "Making executable tests..."
-	@$(CC) -g -c -std=gnu11 -I./protocol/ -I./third-party/lz4 ./tests/protocol_tests.c -o $(OBJS)/PT_protocol_tests.o
-	@$(CC) -g -std=gnu11 $(OBJS)/lz4.o $(OBJS)/PT_*.o -o ./bin/tests
+	@$(CC) -g -c -std=gnu11 -I./protocol/ ./tests/protocol_tests.c -o $(OBJS)/PT_protocol_tests.o
+	@$(CC) -g -std=gnu11 $(OBJS)/PT_*.o -o ./bin/tests
 	@echo "Compiled successfully!"
 	@echo "\n\nRunning unit tests:"
 	./bin/tests
@@ -97,12 +87,12 @@ clean:
 	rm -rf $(STATIC_LIB_DIR)
 	rm -rf $(SHARED_LIB_DIR)
 
-withoutlib: $(BIN) $(OBJS) $(OBJS)/SA_sampleapp.o protocol_logger protocol_core protocol_device lz4_compress
+withoutlib: $(BIN) $(OBJS) $(OBJS)/SA_sampleapp.o protocol_logger protocol_core protocol_device
 
-staticlib: $(STATIC_LIB_DIR) $(OBJS) protocol_logger protocol_core protocol_device lz4_compress
+staticlib: $(STATIC_LIB_DIR) $(OBJS) protocol_logger protocol_core protocol_device
 	@echo "Assembly of static lib.."
-	@ar cr $(STATIC_LIB_DIR)/libconnection.a $(OBJS)/PC_*.o $(OBJS)/lz4.o
+	@ar cr $(STATIC_LIB_DIR)/libconnection.a $(OBJS)/PC_*.o
 
-sharedlib: $(SHARED_LIB_DIR) $(OBJS) protocol_logger protocol_core protocol_device lz4_compress
+sharedlib: $(SHARED_LIB_DIR) $(OBJS) protocol_logger protocol_core protocol_device
 	@echo "Assembly of shared lib.."
 	@gcc -shared -g $(COMPILE_FLAGS) $(LOCAL_FLAGS) -undefined dynamic_lookup $(OBJS)/PC_*.o $(OBJS)/lz4.o -o $(SHARED_LIB_DIR)/libconnection.so

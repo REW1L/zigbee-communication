@@ -1,17 +1,10 @@
 #include "Sender.hpp"
+
+#include <string.h>
+
 #include "ProtocolLogger.hpp"
 #include "common_functions.h"
 
-#if !defined(RF24)
-  #include "../zigbee/device.hpp"
-#else
-  #include "../RF24/device.hpp"
-#endif
-
-#include <string.h>
-#include <stdio.h>
-
-#ifndef RF24
 Sender::Sender(int fd)
 {
   this->fd = fd;
@@ -34,16 +27,10 @@ int Sender::configure(const char *path)
   this->fd = this->device->configure_device(path);
   return this->fd;
 }
-#endif
 
 int Sender::send(RouteConfig inf)
 {
   char temp_frame[FRAME_SIZE+PREAMBLE_SIZE+2+sizeof(uint64_t)*2+30];
-  // if (fd < 0)
-  // {
-  //   LOG_ERROR("SENDER", "Device was not configured. fd: %d", fd);
-  //   return 1;
-  // }
   LOG_INFO("SENDER", "Send RouteConfig id: %u coords_src: [%u, %u], "
                "coords_dst: [%u, %u], speed: %u, time: %u", 
                inf.id, inf.coords_src[0], inf.coords_src[1], inf.coords_dst[0],
