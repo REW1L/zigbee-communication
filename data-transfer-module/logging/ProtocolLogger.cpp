@@ -10,7 +10,7 @@
 #ifndef LOGGING_NONE
 
 std::string log_file_name;
-std::list<std::string> out_list;
+std::list<std::string*> out_list;
 std::mutex log_mtx;
 
 void ProtocolLogger::log(const char *prefix, const char *format, ...)
@@ -29,7 +29,7 @@ void ProtocolLogger::log(const char *prefix, const char *format, ...)
   va_start(arguments, format);
   offset += std::snprintf(buffer+offset, MAX_LOG_SIZE-offset, "%s ", prefix);
   vsnprintf(buffer+offset, MAX_LOG_SIZE-offset, format, arguments);
-  std::string str(buffer);
+  std::string *str = new std::string(buffer);
   va_end(arguments);
   log_mtx.lock();
   out_list.push_back(str);
@@ -47,7 +47,7 @@ void ProtocolLogger::out_thread()
 
 void ProtocolLogger::flush()
 {
-  std::list<std::string> temp_str;
+  std::list<std::string*> temp_str;
   
   log_mtx.lock();
   for(auto it = out_list.begin(); it != out_list.end(); it++)
@@ -61,13 +61,15 @@ void ProtocolLogger::flush()
   FILE* descriptor = fopen(log_file_name.c_str(), "a");
   for(auto it = temp_str.begin(); it != temp_str.end(); it++)
   {
-    fprintf(descriptor, "%s\n", (*it).c_str());
+    fprintf(descriptor, "%s\n", (*(*it)).c_str());
+    delete *it;
   }
   fclose(descriptor);
 #else
   for(auto it = temp_str.begin(); it != temp_str.end(); it++)
   {
-    printf("%s\n", (*it).c_str());
+    printf("%s\n", (*(*it)).c_str());
+    delete *it;
   }
 #endif
   temp_str.clear();

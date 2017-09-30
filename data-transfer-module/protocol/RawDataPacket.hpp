@@ -12,9 +12,8 @@ class RawDataPacket {
 public:
   RawDataPacket(){}
   ~RawDataPacket() { free(data); }
-  RawDataPacket(uint32_t src, size_t size, char* data)
-          : src(src), size(size), data(data) {}
-  uint32_t src;
+  RawDataPacket(size_t size, char* data)
+          : size(size), data(data) {}
   size_t size;
   char* data;
 };

@@ -5,13 +5,13 @@
 #include <termios.h> /* POSIX terminal control definitions */
 #include <stdint.h>
 #include <stdio.h>
+#include <sys/ioctl.h>
 #include "device.hpp"
 #include "stdlib.h"
 
-#include "../protocol/protocol.h"
 #include "../logging/ProtocolLogger.hpp"
-
-// TODO: make logs
+#include <chrono>
+#include <thread>
 
 static int
 set_interface_attribs (int fd, int speed, int parity)
@@ -126,7 +126,25 @@ int Device::configure_device(const char* device)
 
 int Device::send_frame(char *array, int size)
 {
-  return write(this->fd, array, size);
+  std::this_thread::sleep_for(std::chrono::milliseconds(WAIT_BEFORE_SEND)); // waiting for last transmission
+  uint8_t header[8] = {0x7E, 0x00, 0x00, 0x01, 0x01, 0xFF, 0xFF, 0x0}; // broadcast
+  size += 5;
+  char *array_tx = (char*)calloc(1, (size_t)size + 4); // plus header size and crc byte
+  header[1] = (uint8_t)((size >> 8) & 0xFF); // packet int size in little-endian
+  header[2] = (uint8_t)(size & 0xFF);
+  memcpy(array_tx, header, 8); // copy header in array to send
+  memcpy(&array_tx[8], array, size - 5); // copy userdata in array to send
+  array_tx[size + 3] = calc_checksum(&array_tx[3], size+1);
+  LOG_INFO("DEVICE", "Sending frame (%d) with checksum: %02hhX", size, (char)array_tx[size + 3]);
+//  printf("\nSTART PACKET\n");
+//  for(int i = 0; i < size + 4; i++)
+//  {
+//    printf("%02hhX ", array_tx[i]);
+//  }
+//  printf("\nEND PACKET\n");
+  int bytes_sent = write(this->fd, array_tx, size + 4); // write bytes to XBEE
+  delete[] array_tx; // memory deallocating
+  return bytes_sent;
 }
 
 int Device::send(char* array, int size)
@@ -137,4 +155,19 @@ int Device::send(char* array, int size)
 int Device::read_from_device(char *buffer, int size)
 {
   return read(this->fd, buffer, size);
+}
+
+char Device::calc_checksum(const char* data, int size)
+{
+  uint16_t crc = 0;
+  for(int i = 0; i < size-1; i++)
+    crc += (char)data[i];
+  return (char)(0xFF-crc&0xFF);
+}
+
+int Device::get_available_bytes()
+{
+  int number;
+  ioctl(this->fd, FIONREAD, &number);
+  return number;
 }

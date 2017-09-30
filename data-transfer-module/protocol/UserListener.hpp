@@ -9,7 +9,6 @@
 class UserListener : public Listener
 {
 public:
-  virtual void notifyRouteConfig(RouteConfig inf) = 0;
   virtual void notifyRawData(RawDataPacket*) = 0;
   void notify(Event);
 };
