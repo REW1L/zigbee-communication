@@ -1,7 +1,9 @@
 ifeq ($(LOGGING), STD)
 LOCAL_FLAGS += -DLOGGING_STDOUT
-else ifeq($(LOGGING), NONE)
-LOCAL_FLAGS += -DLOGGING_NONE
+else
+  ifeq ($(LOGGING), NONE)
+    LOCAL_FLAGS += -DLOGGING_NONE
+  endif
 endif
 
 

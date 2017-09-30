@@ -3,6 +3,7 @@
 
 #include <cstdlib>
 #include <cstdint>
+#include "../protocol/protocol.h"
 
 class Device {
 public:
@@ -18,10 +19,14 @@ public:
 
   int send(char*, int);
 
-  uint64_t get_id() { return mac; }
-// private:
+  int get_available_bytes();
+
+  uint64_t get_id() { return this->mac; }
   uint64_t mac;
   int fd;
+
+private:
+  char calc_checksum(const char* data, int size);
 };
 
 #endif /* DEVICE_HPP */

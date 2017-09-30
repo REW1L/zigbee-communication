@@ -1,8 +1,5 @@
 #include "WorkerThread.hpp"
 #include "ProtocolLogger.hpp"
-#include "Events.h"
-#include <thread>
-#include <chrono>
 
 std::mutex WorkerThread::events_mtx;
 std::list<Event> WorkerThread::events;

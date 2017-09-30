@@ -9,7 +9,6 @@ PR_SOURCES_CPP := $(PROTOCOL_SRC)/Reader.cpp \
                   $(PROTOCOL_SRC)/UserListener.cpp
 
 PR_SOURCES_C := $(PROTOCOL_SRC)/protocol_encode.c \
-                $(PROTOCOL_SRC)/parser.c \
                 $(PROTOCOL_SRC)/common_functions.c \
                 $(PROTOCOL_SRC)/crc16.c
 

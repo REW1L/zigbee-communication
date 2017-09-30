@@ -2,8 +2,10 @@
 
 #include <string.h>
 
+
 #include "ProtocolLogger.hpp"
 #include "common_functions.h"
+#include "protocol.h"
 
 Sender::Sender(int fd)
 {
@@ -28,57 +30,37 @@ int Sender::configure(const char *path)
   return this->fd;
 }
 
-int Sender::send(RouteConfig inf)
-{
-  char temp_frame[FRAME_SIZE+PREAMBLE_SIZE+2+sizeof(uint64_t)*2+30];
-  LOG_INFO("SENDER", "Send RouteConfig id: %u coords_src: [%u, %u], "
-               "coords_dst: [%u, %u], speed: %u, time: %u", 
-               inf.id, inf.coords_src[0], inf.coords_src[1], inf.coords_dst[0],
-               inf.coords_dst[1], inf.speed, inf.time);
-
-  packets ep = pack_info(inf, 0);
-
-  LOG_INFO("SENDER", "Sending %d packets", ep.number);
-
-  // TODO: make sending packets more stable
-  int temp;
-  memcpy(temp_frame, PREAMBLE, PREAMBLE_SIZE);
-  *(uint64_t*)(&temp_frame[PREAMBLE_SIZE]) = this->device->mac;
-  *(uint64_t*)(&temp_frame[PREAMBLE_SIZE+sizeof(uint64_t)]) = 0xFFFFFFFFFFFFFFFFLL; // broadcast forever
-  for (int i = 0; i < ep.number; i++)
-  {
-    memcpy(&(temp_frame[PREAMBLE_SIZE+sizeof(uint64_t)*2]), ep.data[i], FRAME_SIZE);
-    *(uint16_t*)(&temp_frame[PREAMBLE_SIZE+sizeof(uint64_t)*2+FRAME_SIZE]) = pr_crc16(temp_frame, FRAME_SIZE+PREAMBLE_SIZE);
-    temp = this->device->send_frame(temp_frame, FRAME_SIZE+PREAMBLE_SIZE+2+sizeof(uint64_t)*2);
-    LOG_INFO("SENDER", "Sent bytes: %d", temp);
-  }
-  free(ep.data);
-  free(ep.raw_data);
-
-  return 0;
-}
-
 int Sender::send(char* array, size_t size, uint32_t from)
 {
   LOG_INFO("SENDER", "Sending size: %d", size);
-  char temp_frame[FRAME_SIZE+PREAMBLE_SIZE+2+sizeof(uint64_t)*2+30];
   packets ep = make_packets(array, size, 0, from, OP_RAW_DATA);
+  int successful = this->send_packets(ep);
+  free(ep.packet_array[0].data);
+  free(ep.packet_array);
+  return successful;
+}
+
+int Sender::send_packets(packets ep)
+{
+  char temp_frame[FRAME_SIZE+2+sizeof(uint64_t)*2+30];
 
   LOG_INFO("SENDER", "Sending %d packets", ep.number);
 
   // TODO: make sending packets more stable
   int temp;
-  memcpy(temp_frame, PREAMBLE, PREAMBLE_SIZE);
-  *(uint64_t*)(&temp_frame[PREAMBLE_SIZE]) = this->device->mac;
-  *(uint64_t*)(&temp_frame[PREAMBLE_SIZE+sizeof(uint64_t)]) = 0xFFFFFFFFFFFFFFFFLL; // broadcast forever
+  *(uint64_t*)(temp_frame) = this->device->mac;
+  *(uint64_t*)(&temp_frame[sizeof(uint64_t)]) = 0xFFFFFFFFFFFFFFFFLL; // broadcast forever
   for (int i = 0; i < ep.number; i++)
   {
-    memcpy(&(temp_frame[PREAMBLE_SIZE+sizeof(uint64_t)*2]), ep.data[i], FRAME_SIZE);
-    *(uint16_t*)(&temp_frame[PREAMBLE_SIZE+sizeof(uint64_t)*2+FRAME_SIZE]) = pr_crc16(temp_frame, FRAME_SIZE+PREAMBLE_SIZE);
-    temp = this->device->send_frame(temp_frame, FRAME_SIZE+PREAMBLE_SIZE+2+sizeof(uint64_t)*2);
+    temp = ep.packet_array[i].size;
+    LOG_INFO("SENDER", "Payload size: %d", temp);
+    LOG_DEBUG("SENDER", "First 3 bytes of data: %02hhX %02hhX %02hhX",
+              ep.packet_array[i].data[0], ep.packet_array[i].data[1], ep.packet_array[i].data[2]);
+    memcpy(&(temp_frame[sizeof(uint64_t) * 2]), ep.packet_array[i].data, (uint16_t)temp);
+    *(uint16_t*)(&temp_frame[sizeof(uint64_t) * 2 + temp])= pr_crc16(temp_frame, (uint16_t)temp + sizeof(uint64_t) * 2);
+    temp = this->device->send_frame(temp_frame, temp + 2 + sizeof(uint64_t) * 2);
     LOG_INFO("SENDER", "Sent bytes: %d", temp);
   }
-  free(ep.data);
-  free(ep.raw_data);
 
+  return 0;
 }
