@@ -15,13 +15,13 @@ public:
   Sender(int fd);
   Sender(Device*);
   int configure(const char *path);
-  int send(char* array, size_t size, uint32_t from);
+  int send(const char* array, size_t size, uint32_t from) const;
   int getId() { return fd; }
   Device *device;
   const char *path;
   int fd;
 private:
-  int send_packets(packets);
+  int send_packets(packets) const;
 };
 
 #endif // SENDER_HPP

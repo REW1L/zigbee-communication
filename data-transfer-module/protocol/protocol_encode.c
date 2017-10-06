@@ -47,7 +47,7 @@ int8_t make_header(char* packet,
   return offset;
 }
 
-packets make_packets(char* data, 
+packets make_packets(const char* data,
                       size_t size, 
                       uint8_t flags, 
                       uint32_t id, 

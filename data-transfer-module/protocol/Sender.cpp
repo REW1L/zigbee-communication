@@ -30,7 +30,7 @@ int Sender::configure(const char *path)
   return this->fd;
 }
 
-int Sender::send(char* array, size_t size, uint32_t from)
+int Sender::send(const char* array, size_t size, uint32_t from) const
 {
   LOG_INFO("SENDER", "Sending size: %d", size);
   packets ep = make_packets(array, size, 0, from, OP_RAW_DATA);
@@ -40,7 +40,7 @@ int Sender::send(char* array, size_t size, uint32_t from)
   return successful;
 }
 
-int Sender::send_packets(packets ep)
+int Sender::send_packets(packets ep) const
 {
   char temp_frame[FRAME_SIZE+2+sizeof(uint64_t)*2+30];
 
