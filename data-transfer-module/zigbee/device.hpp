@@ -21,11 +21,13 @@ public:
 
   int get_available_bytes();
 
-  uint64_t get_id() { return this->mac; }
+  int read_frame(char* buffer, int max_size);
+
   uint64_t mac;
   int fd;
 
 private:
+  int _send_command(const char* cmd, uint8_t cmd_size);
   char calc_checksum(const char* data, int size);
 };
 

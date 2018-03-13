@@ -71,12 +71,17 @@ int main(int argc, char const *argv[])
       scanf("%d", &id);
       std::cout << "Now id is: " << id << std::endl;
     }
+    if(strncmp(input, "get_pos", 7) == 0)
+    {
+      std::cout << "Request was sent" << std::endl;
+      sr.get_position(id);
+    }
 
 
     if(strcmp(input, "help\n") == 0)
     {
-      std::cout << "set_speed\nset_coords_start\nset_coords_end\nset_id" <<
-        "\nexit\nprint_info\ndrdrdr - send predefined data\ndo_this - send current data\n";
+      std::cout << "send_text\t-\tsend raw text\n"
+                << "get_pos\t-\tsend asynchronous request for coordinates\n";
     }
     if(strncmp(input, "send_file", 9) == 0)
     {

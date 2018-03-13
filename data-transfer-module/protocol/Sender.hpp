@@ -16,6 +16,7 @@ public:
   Sender(Device*);
   int configure(const char *path);
   int send(char* array, size_t size, uint32_t from);
+  int get_position(uint32_t from);
   int getId() { return fd; }
   Device *device;
   const char *path;

@@ -21,7 +21,9 @@ WorkerThread::~WorkerThread()
 WorkerThread::WorkerThread()
 {
   this->pl = new ProtocolListener();
+  this->pos_list = new PositioningListener();
   this->add_listener(pl);
+  this->add_listener(pos_list);
 }
 
 int WorkerThread::add_event(Event ev)

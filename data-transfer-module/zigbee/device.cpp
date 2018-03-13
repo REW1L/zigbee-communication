@@ -4,14 +4,10 @@
 #include <errno.h>   /* Error number definitions */
 #include <termios.h> /* POSIX terminal control definitions */
 #include <stdint.h>
-#include <stdio.h>
 #include <sys/ioctl.h>
 #include "device.hpp"
-#include "stdlib.h"
 
 #include "../logging/ProtocolLogger.hpp"
-#include <chrono>
-#include <thread>
 
 static int
 set_interface_attribs (int fd, int speed, int parity)
@@ -20,7 +16,7 @@ set_interface_attribs (int fd, int speed, int parity)
   memset (&tty, 0, sizeof tty);
   if (tcgetattr (fd, &tty) != 0)
   {
-    // printf ("error %d from tcgetattr\n", errno);
+    LOG_ERROR("DEVICE", "error %d from tcgetattr", errno);
     return errno;
   }
 
@@ -48,8 +44,7 @@ set_interface_attribs (int fd, int speed, int parity)
 
   if (tcsetattr (fd, TCSANOW, &tty) != 0)
   {
-    // printf ("error %d from tcsetattr\n", errno);
-
+    LOG_ERROR("DEVICE", "error %d from tcsetattr", errno);
     return errno;
   }
   return 0;
@@ -62,15 +57,12 @@ set_blocking (int fd, int should_block)
   memset (&tty, 0, sizeof tty);
   if (tcgetattr (fd, &tty) != 0)
   {
-    // printf ("error %d from tggetattr\n", errno);
+    LOG_ERROR("DEVICE", "error %d from tggetattr", errno);
     return;
   }
 
   tty.c_cc[VMIN]  = should_block ? 1 : 0;
   tty.c_cc[VTIME] = 0;            // 0.5 seconds read timeout
-
-  // if (tcsetattr (fd, TCSANOW, &tty) != 0)
-    // printf ("error %d setting term attributes", errno);
 }
 
 
@@ -94,33 +86,79 @@ open_port(const char* device)
 
 int Device::configure_device(const char* device)
 {
-  uint8_t buffer[100], offset;
+  uint8_t buffer[255], *raw_mac = (uint8_t*)&(this->mac); //, offset;
+  int response, fail_count;
+  memset(buffer, 0, 255);
   this->fd = open_port(device);
   
   if (this->fd == -1)
     return -1;
-
-  set_interface_attribs (this->fd, B115200, 0);
+  set_interface_attribs (this->fd, B19200, 0);
   set_blocking (this->fd, 0);
 
-  write(this->fd, "+++", 3); // go to AT mode
-  usleep(2000000); // Guard Times
-  read(this->fd, buffer, 10);
-  if(strncmp((char*)buffer, "OK", 2) != 0) // successfully went to AT mode
+  fail_count = 0;
+  this->_send_command("SH", 2);
+  do
   {
-    LOG_INFO("DEVICE", "Configuring buffer: %s", buffer);
-    return -1;
-  }
-  write(this->fd, "ATSH\r", 5); // getting top 8 bytes of MAC
-  usleep(100000); // it needs to get all response
-  read(this->fd, buffer, 9);
-  for(offset = 0; buffer[offset] != '\r' && buffer[offset] != '\n'; offset++);
-  write(this->fd, "ATSL\r", 5); // getting bottom 8 bytes of MAC
-  usleep(100000); // it needs to get all response
-  read(this->fd, buffer+offset, 9);
-  write(this->fd, "ATCN\r", 5);
-  sscanf((char*)(buffer), "%llX", &(this->mac)); // all info is got is in human readable style
-  LOG_INFO("DEVICE", "Configured with mac: 0x%llX, buffer: %s", this->mac, buffer);
+    if (fail_count > 100)
+    {
+      fail_count = 0;
+      this->_send_command("SH", 2);
+    }
+    response = this->read_frame((char*)buffer, 255);
+    fail_count++;
+  } while(response || buffer[3] != 0x88 || buffer[5] != 'S' || buffer[6] != 'H');
+  for(int i = 0; i < 4; i++) raw_mac[7-i] = buffer[8+i];
+
+  fail_count = 0;
+  this->_send_command("SL", 2);
+  do
+  {
+    if (fail_count > 100)
+    {
+      fail_count = 0;
+      this->_send_command("SL", 2);
+    }
+    response = this->read_frame((char*)buffer, 255);
+    fail_count++;
+  } while(response || buffer[3] != 0x88 || buffer[5] != 'S' || buffer[6] != 'L');
+  for(int i = 0; i < 4; i++) raw_mac[3-i] = buffer[8+i];
+
+  LOG_INFO("DEVICE", "Configured with mac: 0x%llX", this->mac);
+  return 0;
+}
+
+int Device::_send_command(const char* cmd, uint8_t cmd_size)
+{
+  uint8_t header[5] = { 0x7E, 0x00, (uint8_t)(cmd_size + 2), 0x08, 0x37 }; // command size can't be more than 255
+  char* command_frame = (char*)malloc(cmd_size + 6); // delimiter + size + frame_type + frame_id + checksum
+  memcpy(command_frame, header, 5);
+  memcpy(&command_frame[5], cmd, cmd_size);
+  command_frame[5+cmd_size] = calc_checksum(&command_frame[3], cmd_size + 5);
+  return write(this->fd, command_frame, cmd_size + 6);
+}
+
+int Device::read_frame(char* buffer, const int max_size)
+{
+  int bytes;
+  uint16_t size;
+
+  usleep(1000000 / 1200); // 2400 Bytes/sec
+  ioctl(this->fd, FIONREAD, &bytes);
+  if( bytes < 1 )
+    return 1;
+  read(this->fd, buffer, 1);
+  if(buffer[0] != 0x7E)
+    return 2;
+
+  usleep(2000000 / 1200); // 2400 Bytes/sec
+  read(this->fd, &buffer[1], 2);
+  size = (uint16_t)(((uint16_t)(buffer[1] & 0xFF) << 8) + (buffer[2] & 0xFF));
+  if (size > max_size)
+    return 3;
+
+  usleep(size * 1000000 / 1200); // 2400 Bytes/sec
+  bytes = (int)read(this->fd, &buffer[3], (size_t)size+1);
   return 0;
 }
 
@@ -128,7 +166,7 @@ int Device::send_frame(char *array, int size)
 {
   std::this_thread::sleep_for(std::chrono::milliseconds(WAIT_BEFORE_SEND)); // waiting for last transmission
   uint8_t header[8] = {0x7E, 0x00, 0x00, 0x01, 0x01, 0xFF, 0xFF, 0x0}; // broadcast
-  size += 5;
+  size += 5; // size of data + XBEE header without first 3 bytes
   char *array_tx = (char*)calloc(1, (size_t)size + 4); // plus header size and crc byte
   header[1] = (uint8_t)((size >> 8) & 0xFF); // packet int size in little-endian
   header[2] = (uint8_t)(size & 0xFF);
@@ -136,12 +174,6 @@ int Device::send_frame(char *array, int size)
   memcpy(&array_tx[8], array, size - 5); // copy userdata in array to send
   array_tx[size + 3] = calc_checksum(&array_tx[3], size+1);
   LOG_INFO("DEVICE", "Sending frame (%d) with checksum: %02hhX", size, (char)array_tx[size + 3]);
-//  printf("\nSTART PACKET\n");
-//  for(int i = 0; i < size + 4; i++)
-//  {
-//    printf("%02hhX ", array_tx[i]);
-//  }
-//  printf("\nEND PACKET\n");
   int bytes_sent = write(this->fd, array_tx, size + 4); // write bytes to XBEE
   delete[] array_tx; // memory deallocating
   return bytes_sent;

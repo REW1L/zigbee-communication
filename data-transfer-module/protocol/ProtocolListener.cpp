@@ -115,6 +115,16 @@ int ProtocolListener::parse_op(zigbee_packet zgbp, char* data, size_t size)
       WorkerThread::add_event(ev);
       break;
     }
+    case OP_POSITIONING:
+    {
+      LOG_INFO("PC_LISTENER", "Received packet with positioning data (%d), RSSI: %d", size, zgbp.rssi);
+      char* array = new char[size+1];
+      memcpy(&array[1], data, size);
+      array[0] = zgbp.rssi;
+      Event ev = { .ev = RECEIVED_POSITIONING_DATA, .data = array };
+      WorkerThread::add_event(ev);
+      break;
+    }
     default: return 1;
   }
   delete data;
@@ -139,13 +149,14 @@ int ProtocolListener::new_frame(proto_frame* data)
     return -1;
   LOG_DEBUG("PC_LISTENER", "First 3 bytes of packet: %02hhX %02hhX %02hhX",
             ((char*)(pf->data))[0], ((char*)(pf->data))[1], ((char*)(pf->data))[2]);
-  LOG_DEBUG("PC_LISTENER", "Last 3 bytes of packet: %02hhX %02hhX %02hhX",
+  LOG_DEBUG("PC_LISTENER", "Last 6 bytes of packet: %02hhX %02hhX %02hhX %02hhX %02hhX %02hhX",
+            ((char*)(pf->data))[pf->size - 6], ((char*)(pf->data))[pf->size - 5], ((char*)(pf->data))[pf->size - 4],
             ((char*)(pf->data))[pf->size - 3], ((char*)(pf->data))[pf->size - 2],
             ((char*)(pf->data))[pf->size - 1]);
   uint16_t expected_crc = pr_crc16(pf->data, pf->size-3);
   uint16_t actual_crc = *((uint16_t*)((uint64_t)pf->data + pf->size - 3));
 
-  if( actual_crc != expected_crc )
+  if( actual_crc != expected_crc && actual_crc != 0x2121) // magic number for positioning
   {
     LOG_WARNING("PC_LISTENER", "Incorrect crc in packet: 0x%X(expected) 0x%X(actual)",
                 expected_crc, actual_crc);
@@ -153,6 +164,7 @@ int ProtocolListener::new_frame(proto_frame* data)
   }
 
   zgbp = (zigbee_packet*)malloc(sizeof(zigbee_packet));
+  zgbp->rssi = pf->rssi;
   zgbp->from = *(uint64_t*)(pf->data);
   offset = sizeof(uint64_t);
   zgbp->to = *(uint64_t*)((char*)(pf->data)+offset);
@@ -168,6 +180,7 @@ int ProtocolListener::new_frame(proto_frame* data)
 
   if (zgbp->op == 0)
   {
+    LOG_WARNING("PC_LISTENER", "Operation id is not supported: %d src: %X dst: %X", zgbp->op, zgbp->from, zgbp->to);
     free(zgbp);
     return -1;
   }

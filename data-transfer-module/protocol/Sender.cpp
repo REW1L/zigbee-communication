@@ -30,6 +30,16 @@ int Sender::configure(const char *path)
   return this->fd;
 }
 
+int Sender::get_position(uint32_t from)
+{
+  LOG_INFO("SENDER", "%s", "Sending position request");
+  packets ep = make_packets((char*)("\0"), 1, 0, from, OP_GET_POSITIONING);
+  int successful = this->send_packets(ep);
+  free(ep.packet_array[0].data);
+  free(ep.packet_array);
+  return successful;
+}
+
 int Sender::send(char* array, size_t size, uint32_t from)
 {
   LOG_INFO("SENDER", "Sending size: %d", size);

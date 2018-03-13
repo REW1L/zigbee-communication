@@ -7,6 +7,7 @@
 #include "Events.h"
 #include "Listener.hpp"
 #include "ProtocolListener.hpp"
+#include "PositioningListener.hpp"
 
 class WorkerThread
 {
@@ -23,6 +24,7 @@ class WorkerThread
     std::thread working_thread;
     char stopped;
     ProtocolListener *pl;
+    PositioningListener *pos_list;
     static std::list<Event> events;
     std::list<Listener*> listeners;
 };

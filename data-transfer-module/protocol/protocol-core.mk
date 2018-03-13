@@ -6,6 +6,7 @@ PR_SOURCES_CPP := $(PROTOCOL_SRC)/Reader.cpp \
                   $(PROTOCOL_SRC)/Sender.cpp \
                   $(PROTOCOL_SRC)/WorkerThread.cpp \
                   $(PROTOCOL_SRC)/ProtocolListener.cpp \
+                  $(PROTOCOL_SRC)/PositioningListener.cpp \
                   $(PROTOCOL_SRC)/UserListener.cpp
 
 PR_SOURCES_C := $(PROTOCOL_SRC)/protocol_encode.c \

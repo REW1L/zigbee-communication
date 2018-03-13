@@ -19,6 +19,8 @@ extern "C" {
 #define MESSAGE_NUMBER_SIZE 1
 #define OP_SIZE 1
 #define OP_RAW_DATA 2
+#define OP_POSITIONING 3
+#define OP_GET_POSITIONING 4
 #define SIZE_SIZE 2
 #define FIELD_ID_SIZE 1
 #define WAIT_BEFORE_SEND 100
@@ -51,6 +53,7 @@ typedef struct {
 
 typedef struct
 {
+  uint8_t rssi;
   uint8_t header_flags;
   uint8_t number;
   uint32_t id;
@@ -65,6 +68,7 @@ typedef struct
 {
   void* data;
   int size;
+  uint8_t rssi;
 } proto_frame;
 
 #if defined (__cplusplus)

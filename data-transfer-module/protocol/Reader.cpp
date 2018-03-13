@@ -86,51 +86,25 @@ int Reader::stop()
 
 void Reader::reader_function()
 {
-  char* buffer = new char[1000];
-  int bytes_received = 0, offset = 0, size;
+  char* buffer = new char[300];
+  int read_frame_rezult, size;
   proto_frame *pf;
   while(!stopped)
   {
-    std::this_thread::sleep_for(this->timeout);
-
-    bytes_received = this->device->get_available_bytes();
-    if(bytes_received < 3)
+//    std::this_thread::sleep_for(this->timeout);
+    read_frame_rezult = this->device->read_frame(buffer, 255);
+    if(read_frame_rezult)
       continue;
 
-    bytes_received = this->device->read_from_device(buffer, 3);
-    for(offset = 0; offset < 3 && buffer[offset] != FRAME_DELIMITER; offset++);
-    if(offset == 3)
-      continue;
-
-    if(offset > 0)
-    {
-      if (this->device->get_available_bytes() < 2)
-        continue;
-      else
-        this->device->read_from_device(&buffer[bytes_received], (3-(bytes_received-offset)));
-    }
-    size = (((uint16_t)(buffer[offset+1] & 0xFF) << 8) + (buffer[offset+2] & 0xFF));
-    if (size == 0)
-      continue;
-    for(int i = 0; i < 10; i++)
-    {
-      bytes_received = this->device->get_available_bytes();
-      if (bytes_received >= size)
-        break;
-      bytes_received = 0;
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-    if(bytes_received < size)
-      continue;
-    this->device->read_from_device(&buffer[offset+3], size);
-
-    if (buffer[offset+3] == (char)0x80)
+    size = (((uint16_t)(buffer[1] & 0xFF) << 8) + (buffer[2] & 0xFF));
+    if (buffer[3] == (char)0x80)
     {
       Event ev = {.ev = NEW_FRAME, .data = new proto_frame};
       pf = (proto_frame *) ev.data;
       pf->data = new char[size - 10]; // size - (from address + checksum + XBEE operation + RSSI)
       pf->size = size-10;
-      memcpy(pf->data, &buffer[offset + 14], pf->size);
+      pf->rssi = (uint8_t)buffer[12];
+      memcpy(pf->data, &buffer[14], pf->size);
       WorkerThread::add_event(ev);
     }
   }
