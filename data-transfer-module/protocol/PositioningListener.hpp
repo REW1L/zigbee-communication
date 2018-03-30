@@ -13,6 +13,7 @@
 typedef struct {
   uint8_t RSSI;
   uint8_t RSSIe;
+  uint8_t RSSIe2;
 } PositioningUnit;
 
 class PositioningListener : public Listener {
@@ -21,7 +22,7 @@ public:
   virtual ~PositioningListener () {}
   virtual void notify(Event);
 private:
-  std::map<int, double> calc_position(uint8_t id, uint8_t RSSI, uint8_t RSSIe);
+  std::map<int, double> calc_position(uint8_t id, uint8_t RSSI, uint8_t RSSIe, uint8_t RSSIe2);
   void clear_positioning() { pos_map.clear(); };
   std::map<int, PositioningUnit> pos_map;
 };

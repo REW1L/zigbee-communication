@@ -22,10 +22,10 @@ void PositioningListener::notify(Event ev)
         LOG_WARNING("POS_LIST", "Received positioning from strange id: %02hhX", rssi_data[1]);
         return;
       }
-      LOG_INFO("POS_LIST", "Received positioning from id: %02hhX (RSSI: %d, RSSIe: %d)",
-               rssi_data[1], rssi_data[0], rssi_data[2]);
+      LOG_INFO("POS_LIST", "Received positioning from id: %02hhX (RSSI: %d, RSSIe: %d, RSSIe2: %d)",
+               rssi_data[1], rssi_data[0], rssi_data[2], rssi_data[3]);
 
-      std::map<int, double> distance = calc_position(rssi_data[1], rssi_data[0], rssi_data[2]);
+      std::map<int, double> distance = calc_position(rssi_data[1], rssi_data[0], rssi_data[2], rssi_data[3]);
 
       if(!distance.empty())
       {
@@ -82,13 +82,13 @@ static std::list<std::pair<double, double>> calc_intersec_points( double x0, dou
 }
 
 
-std::map<int, double> PositioningListener::calc_position(uint8_t id, uint8_t RSSI, uint8_t RSSIe)
+std::map<int, double> PositioningListener::calc_position(uint8_t id, uint8_t RSSI, uint8_t RSSIe, uint8_t RSSIe2)
 {
   std::map<int, double> rezult;
   if (id == 1) // new data
     clear_positioning();
 
-  this->pos_map[id-1] = PositioningUnit { .RSSI = RSSI, .RSSIe = RSSIe };
+  this->pos_map[id-1] = PositioningUnit { .RSSI = RSSI, .RSSIe = RSSIe, .RSSIe2 = RSSIe2 };
 
   if(this->pos_map.size() < 3)
     return rezult;
@@ -98,9 +98,10 @@ std::map<int, double> PositioningListener::calc_position(uint8_t id, uint8_t RSS
   else
     id--;
 
-  double path_loss_exp = calc_path_loss_exp(pos_map[0].RSSIe, pos_map[2].RSSIe);
+  double path_loss_exp = calc_path_loss_exp(pos_map[1].RSSIe, pos_map[1].RSSIe2);
 
-  LOG_INFO("POS_LIST", "Ethalon RSSI: %d Path Loss Exponent: %f", pos_map[id].RSSIe, path_loss_exp);
+  LOG_INFO("POS_LIST", "Ethalon RSSI: [%d, %d] Path Loss Exponent: %f", pos_map[id].RSSIe,
+           pos_map[id].RSSIe2, path_loss_exp);
 
   for(int i = 0; i < 3; i ++)
     rezult[i] = calc_distance(pos_map[i].RSSI, pos_map[id].RSSIe, path_loss_exp);
@@ -165,7 +166,7 @@ std::map<int, double> PositioningListener::calc_position(uint8_t id, uint8_t RSS
   LOG_INFO("POS_LIST", "Intersec pointers: %s", temp);
   delete[] temp;
 
-  LOG_INFO("POS_LIST", "Guessing position: [%f;%f] radius: %f", x, y, max_dist/1.5);
+  LOG_INFO("POS_LIST", "Guessing position: [%f;%f] radius: %f", x, y, max_dist);
 
   return rezult;
 }
